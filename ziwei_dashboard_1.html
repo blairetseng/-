@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>紫微斗數課｜銷售儀表板</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --color-background-primary:#ffffff;--color-background-secondary:#f5f5f4;--color-background-tertiary:#efefed;
+  --color-background-info:#e6f1fb;--color-text-primary:#1a1a18;--color-text-secondary:#5f5e5a;
+  --color-text-tertiary:#888780;--color-text-info:#185fa5;
+  --color-border-tertiary:rgba(0,0,0,0.12);--color-border-secondary:rgba(0,0,0,0.22);--color-border-primary:rgba(0,0,0,0.35);
+  --border-radius-md:8px;--border-radius-lg:12px;--font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --color-background-primary:#1c1c1a;--color-background-secondary:#2a2a28;--color-background-tertiary:#323230;
+    --color-background-info:#042c53;--color-text-primary:#f0ede8;--color-text-secondary:#b4b2a9;
+    --color-text-tertiary:#888780;--color-text-info:#85b7eb;
+    --color-border-tertiary:rgba(255,255,255,0.12);--color-border-secondary:rgba(255,255,255,0.22);--color-border-primary:rgba(255,255,255,0.35);
+  }
+}
+body{font-family:var(--font-sans);background:var(--color-background-tertiary);color:var(--color-text-primary);min-height:100vh;padding:16px}
+.container{max-width:860px;margin:0 auto}
+h1{font-size:18px;font-weight:500;margin-bottom:16px}
+.metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:16px}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px}
+.metric-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:4px}
+.metric-value{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.metric-sub{font-size:11px;color:var(--color-text-tertiary);margin-top:2px}
+.metric.profit .metric-value{color:#1D9E75}.metric.loss .metric-value{color:#E24B4A}
+.upload-zone{border:1px dashed var(--color-border-secondary);border-radius:var(--border-radius-lg);padding:20px;text-align:center;cursor:pointer;transition:background 0.15s;margin-bottom:16px;background:var(--color-background-primary)}
+.upload-zone:hover{background:var(--color-background-secondary)}
+.upload-zone input[type=file]{display:none}
+.file-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;justify-content:center}
+.file-chip{font-size:12px;background:var(--color-background-info);color:var(--color-text-info);padding:3px 10px;border-radius:20px;display:flex;align-items:center;gap:4px}
+.file-chip button{background:none;border:none;cursor:pointer;color:var(--color-text-info);font-size:14px;line-height:1;padding:0}
+.chart-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px;margin-bottom:12px}
+.section-label{font-size:13px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px}
+.progress-wrap{background:var(--color-background-secondary);border-radius:20px;height:10px;overflow:hidden;margin:6px 0 2px}
+.progress-bar{height:100%;border-radius:20px;background:#378ADD;transition:width 0.4s ease}.progress-bar.over{background:#1D9E75}
+.empty{text-align:center;padding:40px 20px;color:var(--color-text-tertiary);font-size:14px;background:var(--color-background-primary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary)}
+.tabs{display:flex;gap:4px;margin-bottom:12px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.tab{font-size:13px;padding:6px 12px;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-0.5px;background:none;border-left:none;border-right:none;border-top:none}
+.tab.active{color:var(--color-text-primary);border-bottom-color:var(--color-text-primary);font-weight:500}
+.day-selector{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;align-items:center}
+.day-btn{font-size:12px;padding:4px 10px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:none;cursor:pointer;color:var(--color-text-secondary)}
+.day-btn.active{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{font-weight:500;color:var(--color-text-secondary);text-align:left;padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);white-space:nowrap}
+td{padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);white-space:nowrap}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+td.input-cell{padding:3px 6px}
+tr:last-child td{border-bottom:none}
+.ok{color:#1D9E75;font-weight:500}.warn{color:#BA7517;font-weight:500}.bad{color:#E24B4A;font-weight:500}
+.num-input{font-size:12px;text-align:right;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:4px;padding:3px 6px;color:var(--color-text-primary)}
+.num-input:focus{outline:none;border-color:var(--color-border-primary)}
+.ad-input{width:100px}.fixed-input{width:110px}
+.summary-card{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:14px 16px;margin-bottom:12px;border-left:3px solid #378ADD}
+.summary-title{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.summary-body{font-size:13px;color:var(--color-text-primary);line-height:1.9}
+.summary-body .hi{color:#1D9E75;font-weight:500}.summary-body .lo{color:#E24B4A;font-weight:500}.summary-body .mid{color:#BA7517;font-weight:500}
+.cost-section{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px;margin-bottom:12px}
+.fixed-cost-table{width:100%;font-size:12px;margin-top:10px;border-collapse:collapse}
+.fixed-cost-table td{padding:5px 6px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary)}
+.fixed-cost-table tr:last-child td{border-bottom:none;font-weight:500}
+.fixed-cost-table .lbl{color:var(--color-text-secondary)}
+.quick-ad-box{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px;margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.quick-ad-box label{font-size:12px;color:var(--color-text-secondary);white-space:nowrap}
+.quick-ad-box select{font-size:12px;padding:4px 8px;border-radius:4px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);cursor:pointer}
+.quick-ad-btn{font-size:12px;padding:4px 12px;border-radius:4px;border:none;background:#378ADD;color:#fff;cursor:pointer}
+.quick-ad-btn:hover{opacity:0.85}
+.cost-metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:0}
+</style>
+</head>
+<body>
+<div class="container">
+<h1><i class="ti ti-chart-bar" style="margin-right:6px;vertical-align:-2px" aria-hidden="true"></i>紫微斗數課｜銷售儀表板</h1>
+
+<div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+  <i class="ti ti-upload" style="font-size:22px;color:var(--color-text-tertiary)" aria-hidden="true"></i>
+  <p style="font-size:14px;color:var(--color-text-secondary);margin-top:6px"><strong style="color:var(--color-text-primary)">點擊上傳</strong>或拖曳後台報表 Excel（可多選）</p>
+  <p style="font-size:12px;color:var(--color-text-tertiary);margin-top:3px">支援 .xlsx 格式，可一次上傳多天</p>
+  <div class="file-list" id="fileList"></div>
+  <input type="file" id="fileInput" accept=".xlsx,.xls" multiple>
+</div>
+<div id="dashContent">
+  <div class="empty"><i class="ti ti-chart-bar" style="font-size:32px;display:block;margin-bottom:8px" aria-hidden="true"></i>上傳後台報表後，圖表將自動出現</div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
+<script>
+Chart.register(ChartDataLabels);
+const DAILY_TARGET=1041667,TOTAL_TARGET=50000000;
+const CAMPAIGN_START=new Date('2026-06-09'),CAMPAIGN_END=new Date('2026-07-26');
+const fixedCostItems=[{id:'prep',label:'前置準備',value:1200000},{id:'pread',label:'前測廣告',value:800000},{id:'kol',label:'KOL 費用',value:2000000}];
+const DISCOUNT_MAP=[
+  {key:'舊生0元',match:r=>r.discountName&&r.discountName.includes('舊生兌換碼')},
+  {key:'原價',match:r=>!r.discountName||r.discountName.trim()===''},
+  {key:'桃桃喜500',match:r=>r.discountName&&r.discountName.includes('桃桃喜老朋友專屬折扣碼')},
+  {key:'omember500',match:r=>r.discountName&&(r.discountName.includes('omember500')||r.discountName.includes('老朋友領取折扣碼'))},
+  {key:'YTM500',match:r=>r.discountName&&r.discountName.includes('YTM500')},
+  {key:'HOLO500',match:r=>r.discountName&&r.discountName.includes('HOLO500')},
+  {key:'SAT500',match:r=>r.discountName&&r.discountName.includes('SAT500')},
+  {key:'問券400',match:r=>r.discountName&&(r.discountName.includes('問券填寫')||r.discountName.includes('填寫問券'))},
+  {key:'youngyt350',match:r=>r.discountName&&(r.discountName.includes('youngyt350')||r.discountName.includes('young350'))},
+  {key:'ttx350',match:r=>r.discountName&&r.discountName.includes('ttx350')},
+  {key:'doligu888350',match:r=>r.discountName&&r.discountName.includes('doligu888350')},
+  {key:'TANG350',match:r=>r.discountName&&r.discountName.includes('TANG350')},
+  {key:'TU400',match:r=>r.discountName&&r.discountName.includes('TU400')},
+  {key:'其他',match:r=>true},
+];
+let allOrders=[],uploadedFiles=[],adCosts={};
+const charts={};let selectedDiscountDay='all',selectedHourDay='all';
+function getTotalFixedCost(){return fixedCostItems.reduce((s,i)=>s+i.value,0);}
+function getTotalAdCost(){return Object.values(adCosts).reduce((s,v)=>s+v,0);}
+function getTotalCost(){return getTotalFixedCost()+getTotalAdCost();}
+function classifyDiscount(r){for(const d of DISCOUNT_MAP)if(d.match(r))return d.key;return'其他';}
+function parseXlsx(buffer){
+  const wb=XLSX.read(buffer,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];
+  const rows=XLSX.utils.sheet_to_json(ws,{header:1});const headers=rows[0];if(!headers)return[];
+  const idx=n=>headers.findIndex(h=>h&&String(h).includes(n));
+  const iO=idx('訂單編號'),iS=idx('訂單狀態'),iP=idx('付款方式'),iC=idx('訂單建立時間'),iD=idx('折扣名稱'),iT=idx('訂單總額');
+  const orders=[];
+  for(let i=1;i<rows.length;i++){
+    const r=rows[i];if(!r[iO]||r[iS]!=='SUCCESS')continue;
+    const cs=String(r[iC]||'');const dm=cs.match(/(\d{4})\/(\d{2})\/(\d{2})/);if(!dm)continue;
+    const hm=cs.match(/(\d{2}):\d{2}/);
+    orders.push({id:String(r[iO]),date:`${dm[1]}-${dm[2]}-${dm[3]}`,hour:hm?parseInt(hm[1]):0,total:parseInt(r[iT])||0,discountName:String(r[iD]||''),payMethod:String(r[iP]||'').split(/\s+/)[0].trim()});
+  }
+  orders.forEach(o=>{o.discountKey=classifyDiscount(o);});return orders;
+}
+function mergeOrders(n){const ids=new Set(allOrders.map(o=>o.id));allOrders=allOrders.concat(n.filter(o=>!ids.has(o.id)));}
+function destroyChart(k){if(charts[k]){charts[k].destroy();charts[k]=null;}}
+function getByDate(){const d={};allOrders.forEach(o=>{if(!d[o.date])d[o.date]={rev:0,cnt:0};d[o.date].rev+=o.total;d[o.date].cnt++;});return d;}
+function buildSummary(sortedDates,byDate,totalRev){
+  if(!sortedDates.length)return'';
+  const ld=sortedDates[sortedDates.length-1],today=byDate[ld];
+  const tc=getTotalCost(),ac=getTotalAdCost(),gp=totalRev-tc,roi=tc>0?((totalRev/tc-1)*100):null;
+  const now=new Date(),daysPassed=Math.max(1,Math.floor((now-CAMPAIGN_START)/86400000)+1);
+  const daysLeft=Math.max(0,Math.floor((CAMPAIGN_END-now)/86400000));
+  const cumTarget=Math.min(daysPassed*DAILY_TARGET,TOTAL_TARGET),cumPct=(totalRev/cumTarget*100);
+  const dailyNeeded=daysLeft>0?(Math.max(0,TOTAL_TARGET-totalRev)/daysLeft):0;
+  const dayStatus=today.rev>=DAILY_TARGET?`<span class="hi">超標 $${((today.rev-DAILY_TARGET)/10000).toFixed(1)}萬</span>`:`<span class="lo">未達標，缺口 $${((DAILY_TARGET-today.rev)/10000).toFixed(1)}萬</span>`;
+  const byD={};allOrders.filter(o=>o.date===ld).forEach(o=>{byD[o.discountKey]=(byD[o.discountKey]||0)+1;});
+  const top=Object.entries(byD).sort((a,b)=>b[1]-a[1])[0];
+  const byH=Array(24).fill(0);allOrders.filter(o=>o.date===ld).forEach(o=>{byH[o.hour]++;});
+  const peak=byH.indexOf(Math.max(...byH));
+  const progStatus=cumPct>=110?`<span class="hi">大幅超前（${cumPct.toFixed(0)}%）</span>`:cumPct>=100?`<span class="hi">符合進度（${cumPct.toFixed(0)}%）</span>`:cumPct>=85?`<span class="mid">略微落後（${cumPct.toFixed(0)}%）</span>`:`<span class="lo">明顯落後（${cumPct.toFixed(0)}%）</span>`;
+  const profStr=gp>=0?`<span class="hi">+$${(gp/10000).toFixed(1)}萬</span>`:`<span class="lo">-$${(Math.abs(gp)/10000).toFixed(1)}萬（尚未回本）</span>`;
+  const roiStr=roi!==null?(roi>=0?`<span class="hi">ROI ${roi.toFixed(0)}%</span>`:`<span class="lo">ROI ${roi.toFixed(0)}%</span>`):'尚無成本資料';
+  return`<div class="summary-body">📅 <strong>${ld} 日報</strong><br>當日營收 <strong>$${(today.rev/10000).toFixed(1)}萬</strong>（${today.cnt} 筆），${dayStatus}，購買高峰 <strong>${peak}:00–${peak+1}:00</strong>。${top?` 最活躍渠道 <strong>${top[0]}</strong>（${top[1]} 筆）。`:''}<br><br>📊 <strong>累積進度</strong> ${progStatus}，累積 $${(totalRev/10000).toFixed(1)}萬。${daysLeft>0?` 剩餘 ${daysLeft} 天每日需達 <strong class="${dailyNeeded>DAILY_TARGET*1.3?'lo':dailyNeeded>DAILY_TARGET?'mid':'hi'}">$${(dailyNeeded/10000).toFixed(1)}萬</strong>。`:'活動已結束。'}<br><br>💰 <strong>損益</strong> 累積毛利 ${profStr}，${roiStr}（固定 $${(getTotalFixedCost()/10000).toFixed(1)}萬 + 廣告 $${(ac/10000).toFixed(1)}萬）。${ac===0?' <span class="mid">⚠ 尚未填入廣告成本，損益僅供參考。</span>':''}</div>`;
+}
+function getDiscountData(day){const f=day==='all'?allOrders:allOrders.filter(o=>o.date===day);const d={};f.forEach(o=>{if(!d[o.discountKey])d[o.discountKey]={cnt:0,rev:0};d[o.discountKey].cnt++;d[o.discountKey].rev+=o.total;});return d;}
+function renderDiscountChart(){
+  destroyChart('discount');const ctx=document.getElementById('discountChart');if(!ctx)return;
+  const d=getDiscountData(selectedDiscountDay),keys=Object.keys(d).sort((a,b)=>d[b].cnt-d[a].cnt);
+  charts.discount=new Chart(ctx,{type:'bar',data:{labels:keys,datasets:[{label:'使用人數',data:keys.map(k=>d[k].cnt),backgroundColor:'#1D9E75',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#5f5e5a',font:{size:11},formatter:v=>v+' 人'}},scales:{x:{ticks:{font:{size:11}},grid:{color:'rgba(128,128,128,0.08)'}},y:{ticks:{font:{size:11},autoSkip:false},grid:{display:false}}},layout:{padding:{right:55}}}});
+}
+function renderHourChart(){
+  destroyChart('hour');const ctx=document.getElementById('hourChart');if(!ctx)return;
+  const f=selectedHourDay==='all'?allOrders:allOrders.filter(o=>o.date===selectedHourDay);
+  const bH=Array(24).fill(0);f.forEach(o=>{bH[o.hour]++;});
+  charts.hour=new Chart(ctx,{type:'bar',data:{labels:Array.from({length:24},(_,i)=>i+':00'),datasets:[{label:'購買數',data:bH,backgroundColor:'rgba(127,119,221,0.75)',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#5f5e5a',font:{size:10},formatter:v=>v>0?v:''}},scales:{x:{ticks:{font:{size:10},autoSkip:false,maxRotation:0},grid:{color:'rgba(128,128,128,0.08)'}},y:{ticks:{font:{size:11}},grid:{color:'rgba(128,128,128,0.08)'},beginAtZero:true}},layout:{padding:{top:16}}}});
+}
+function daySelectorHTML(idPrefix,sel,dates){return`<div class="day-selector" id="${idPrefix}Wrap"><span style="font-size:12px;color:#5f5e5a">查看：</span><button class="day-btn ${sel==='all'?'active':''}" onclick="selectDay('${idPrefix}','all',this)">全部加總</button>${dates.map(d=>`<button class="day-btn ${sel===d?'active':''}" onclick="selectDay('${idPrefix}','${d}',this)">${d.slice(5)}</button>`).join('')}</div>`;}
+function selectDay(type,day,btn){document.querySelectorAll(`#${type}Wrap .day-btn`).forEach(b=>b.classList.remove('active'));btn.classList.add('active');if(type==='discountDay'){selectedDiscountDay=day;renderDiscountChart();}if(type==='hourDay'){selectedHourDay=day;renderHourChart();}}
+function updateAllCostDisplays(){
+  const totalRev=allOrders.reduce((s,o)=>s+o.total,0);
+  const fc=getTotalFixedCost(),ac=getTotalAdCost(),tc=getTotalCost(),gp=totalRev-tc,roi=tc>0?((totalRev/tc-1)*100):null;
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val;};
+  set('metricFixedCost','$'+(fc/10000).toFixed(1)+'萬');set('metricAdCost','$'+(ac/10000).toFixed(1)+'萬');set('metricTotalCost','$'+(tc/10000).toFixed(1)+'萬');
+  set('metricProfit',(gp>=0?'+':'-')+'$'+(Math.abs(gp)/10000).toFixed(1)+'萬');set('metricRoi',roi!==null?'ROI '+roi.toFixed(0)+'%':'—');
+  const profEl=document.getElementById('metricProfit');if(profEl)profEl.closest('.metric').className='metric '+(gp>=0?'profit':'loss');
+  const ft=document.getElementById('fixedCostTotal');if(ft)ft.textContent='$'+(fc/10000).toFixed(1)+'萬';
+  updateSummary();
+}
+function updateSummary(){const byDate=getByDate(),sd=Object.keys(byDate).sort(),totalRev=allOrders.reduce((s,o)=>s+o.total,0);const el=document.getElementById('summaryBody');if(el)el.innerHTML=buildSummary(sd,byDate,totalRev);}
+function updateFixedCostItem(id,input){const val=parseInt(input.value)||0;const item=fixedCostItems.find(i=>i.id===id);if(item)item.value=val;updateAllCostDisplays();}
+function updateAdCost(input){
+  const date=input.dataset.date;adCosts[date]=parseInt(input.value)||0;
+  const qi=document.getElementById('quickAdInput'),qd=document.getElementById('quickAdDate');
+  if(qi&&qd&&qd.value===date)qi.value=adCosts[date]||'';
+  refreshDetailRow(date);updateAllCostDisplays();
+}
+function refreshDetailRow(date){
+  const row=document.querySelector(`tr[data-date="${date}"]`);if(!row)return;
+  const cells=row.querySelectorAll('td'),rev=parseInt(row.dataset.rev)||0,adVal=adCosts[date]||0,dp=rev-adVal;
+  const inp=row.querySelector('.ad-input');if(inp)inp.value=adVal||'';
+  cells[6].textContent=(dp>=0?'+':'-')+'$'+(Math.abs(dp)/10000).toFixed(1)+'萬';cells[6].className='num '+(dp>=0?'ok':'bad');
+}
+function applyQuickAd(){
+  const date=document.getElementById('quickAdDate').value,val=parseInt(document.getElementById('quickAdInput').value)||0;
+  if(!date){alert('請先選擇日期');return;}
+  adCosts[date]=val;refreshDetailRow(date);updateAllCostDisplays();
+  const btn=document.getElementById('quickAdBtn');btn.textContent='已儲存 ✓';btn.style.background='#1D9E75';
+  setTimeout(()=>{btn.textContent='套用';btn.style.background='#378ADD';},1500);
+}
+function renderDash(){
+  if(allOrders.length===0){document.getElementById('dashContent').innerHTML=`<div class="empty"><i class="ti ti-chart-bar" style="font-size:32px;display:block;margin-bottom:8px" aria-hidden="true"></i>上傳後台報表後，圖表將自動出現</div>`;return;}
+  const now=new Date(),daysPassed=Math.max(1,Math.floor((now-CAMPAIGN_START)/86400000)+1),daysTotal=Math.floor((CAMPAIGN_END-CAMPAIGN_START)/86400000)+1;
+  const totalRev=allOrders.reduce((s,o)=>s+o.total,0),totalOrders=allOrders.filter(o=>o.total>0).length;
+  const cumTarget=Math.min(daysPassed*DAILY_TARGET,TOTAL_TARGET),pct=(totalRev/TOTAL_TARGET*100).toFixed(1),cumPct=(totalRev/cumTarget*100).toFixed(1);
+  const fc=getTotalFixedCost(),ac=getTotalAdCost(),tc=getTotalCost(),gp=totalRev-tc,roi=tc>0?((totalRev/tc-1)*100):null;
+  const byDate=getByDate(),sortedDates=Object.keys(byDate).sort();
+  const byPay={};allOrders.forEach(o=>{if(!o.payMethod)return;byPay[o.payMethod]=(byPay[o.payMethod]||0)+1;});
+  const dKeys=Object.keys(getDiscountData('all')),discH=Math.max(260,dKeys.length*38+80);
+  const latestDate=sortedDates[sortedDates.length-1]||'';
+  document.getElementById('dashContent').innerHTML=`
+    <div class="metric-grid">
+      <div class="metric"><div class="metric-label">累計營收</div><div class="metric-value">$${(totalRev/10000).toFixed(1)}萬</div><div class="metric-sub">目標 $${(TOTAL_TARGET/10000).toFixed(0)}萬</div></div>
+      <div class="metric"><div class="metric-label">總目標達成率</div><div class="metric-value">${pct}%</div><div class="metric-sub">總目標 5,000萬</div></div>
+      <div class="metric"><div class="metric-label">當期達成率</div><div class="metric-value ${parseFloat(cumPct)>=100?'ok':'warn'}">${cumPct}%</div><div class="metric-sub">應走進度 $${(cumTarget/10000).toFixed(1)}萬</div></div>
+      <div class="metric"><div class="metric-label">總訂單數</div><div class="metric-value">${totalOrders.toLocaleString()}</div><div class="metric-sub">${sortedDates.length} 天資料</div></div>
+    </div>
+    <div class="summary-card"><div class="summary-title"><i class="ti ti-sparkles" aria-hidden="true"></i> 每日銷售總結</div><div id="summaryBody">${buildSummary(sortedDates,byDate,totalRev)}</div></div>
+    <div class="chart-card"><div class="section-label">總目標達成進度</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#5f5e5a;margin-bottom:4px"><span>$${(totalRev/10000).toFixed(1)}萬 / $${(TOTAL_TARGET/10000).toFixed(0)}萬</span><span>${pct}%</span></div>
+      <div class="progress-wrap"><div class="progress-bar ${parseFloat(pct)>=100?'over':''}" style="width:${Math.min(parseFloat(pct),100)}%"></div></div>
+      <div style="font-size:11px;color:#888780;margin-top:4px">距目標還需 $${Math.max(0,(TOTAL_TARGET-totalRev)/10000).toFixed(1)}萬 | 剩餘 ${Math.max(0,daysTotal-daysPassed)} 天</div>
+    </div>
+    <div class="cost-section"><div class="section-label" style="margin-bottom:2px">💸 專案成本控制</div>
+      <p style="font-size:12px;color:#888780;margin-bottom:12px">固定成本可直接修改；今日廣告花費填入後點「套用」。</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
+        <div>
+          <p style="font-size:12px;font-weight:500;color:#5f5e5a;margin-bottom:4px">固定成本明細</p>
+          <table class="fixed-cost-table">
+            ${fixedCostItems.map(item=>`<tr><td class="lbl">${item.label}</td><td style="text-align:right;padding:3px 6px"><input class="num-input fixed-input" type="number" min="0" step="10000" value="${item.value}" oninput="updateFixedCostItem('${item.id}',this)"></td></tr>`).join('')}
+            <tr><td class="lbl" style="font-weight:500">小計</td><td style="text-align:right;font-weight:500;font-size:12px" id="fixedCostTotal">$${(fc/10000).toFixed(1)}萬</td></tr>
+          </table>
+          <div class="quick-ad-box">
+            <label>今日廣告花費</label>
+            <select id="quickAdDate">${sortedDates.map(d=>`<option value="${d}" ${d===latestDate?'selected':''}>${d.slice(5)}</option>`).join('')}</select>
+            <input class="num-input" id="quickAdInput" type="number" min="0" step="1000" placeholder="金額（元）" value="${adCosts[latestDate]||''}" style="width:110px">
+            <button class="quick-ad-btn" id="quickAdBtn" onclick="applyQuickAd()">套用</button>
+          </div>
+        </div>
+        <div>
+          <p style="font-size:12px;font-weight:500;color:#5f5e5a;margin-bottom:4px">成本概覽</p>
+          <div class="cost-metrics-grid">
+            <div class="metric"><div class="metric-label">固定成本</div><div class="metric-value" id="metricFixedCost">$${(fc/10000).toFixed(1)}萬</div><div class="metric-sub">前置+前測+KOL</div></div>
+            <div class="metric"><div class="metric-label">廣告成本</div><div class="metric-value" id="metricAdCost">$${(ac/10000).toFixed(1)}萬</div><div class="metric-sub">各日投放加總</div></div>
+            <div class="metric"><div class="metric-label">總成本</div><div class="metric-value" id="metricTotalCost">$${(tc/10000).toFixed(1)}萬</div><div class="metric-sub">固定 + 廣告</div></div>
+            <div class="metric ${gp>=0?'profit':'loss'}"><div class="metric-label">累積毛利</div><div class="metric-value" id="metricProfit">${gp>=0?'+':'-'}$${(Math.abs(gp)/10000).toFixed(1)}萬</div><div class="metric-sub" id="metricRoi">${roi!==null?'ROI '+roi.toFixed(0)+'%':'—'}</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('trend',this)">每日營收</button>
+      <button class="tab" onclick="switchTab('discount',this)">折扣碼</button>
+      <button class="tab" onclick="switchTab('hour',this)">購買時段</button>
+      <button class="tab" onclick="switchTab('payment',this)">付款方式</button>
+      <button class="tab" onclick="switchTab('detail',this)">每日明細 & 廣告成本</button>
+    </div>
+    <div id="tab-trend" class="tab-panel"><div class="chart-card" style="margin-bottom:0"><div style="position:relative;width:100%;height:${Math.max(220,sortedDates.length*44+80)}px"><canvas id="trendChart"></canvas></div></div></div>
+    <div id="tab-discount" class="tab-panel" style="display:none"><div class="chart-card" style="margin-bottom:0">${daySelectorHTML('discountDay',selectedDiscountDay,sortedDates)}<div style="position:relative;width:100%;height:${discH}px"><canvas id="discountChart"></canvas></div></div></div>
+    <div id="tab-hour" class="tab-panel" style="display:none"><div class="chart-card" style="margin-bottom:0">${daySelectorHTML('hourDay',selectedHourDay,sortedDates)}<div style="position:relative;width:100%;height:220px"><canvas id="hourChart"></canvas></div></div></div>
+    <div id="tab-payment" class="tab-panel" style="display:none"><div class="chart-card" style="margin-bottom:0"><div style="position:relative;width:100%;height:280px"><canvas id="payChart"></canvas></div></div></div>
+    <div id="tab-detail" class="tab-panel" style="display:none"><div class="chart-card" style="margin-bottom:0">
+      <p style="font-size:12px;color:#5f5e5a;margin-bottom:10px">可直接在此輸入各日廣告金額，與成本控制區塊同步。</p>
+      <div class="table-wrap"><table>
+        <thead><tr><th>日期</th><th class="num">訂單數</th><th class="num">當日營收</th><th class="num">累計營收</th><th class="num">達成率</th><th class="num">廣告成本（元）</th><th class="num">當日毛利</th></tr></thead>
+        <tbody id="detailTbody"></tbody>
+      </table></div>
+    </div></div>
+  `;
+  document.getElementById('quickAdDate').addEventListener('change',function(){document.getElementById('quickAdInput').value=adCosts[this.value]||'';});
+  let cumRev=0;const tbody=document.getElementById('detailTbody');
+  sortedDates.forEach(d=>{
+    const dd=byDate[d];cumRev+=dd.rev;
+    const dp=(dd.rev/DAILY_TARGET*100).toFixed(1),adVal=adCosts[d]||0,dayProfit=dd.rev-adVal;
+    const tr=document.createElement('tr');tr.dataset.date=d;tr.dataset.rev=dd.rev;
+    tr.innerHTML=`<td>${d}</td><td class="num">${dd.cnt}</td><td class="num">$${dd.rev.toLocaleString()}</td><td class="num">$${(cumRev/10000).toFixed(1)}萬</td><td class="num ${parseFloat(dp)>=100?'ok':'warn'}">${dp}%</td><td class="input-cell"><input class="num-input ad-input" type="number" min="0" step="1000" placeholder="0" value="${adVal||''}" data-date="${d}" oninput="updateAdCost(this)"></td><td class="num ${dayProfit>=0?'ok':'bad'}">${dayProfit>=0?'+':'-'}$${(Math.abs(dayProfit)/10000).toFixed(1)}萬</td>`;
+    tbody.appendChild(tr);
+  });
+  setTimeout(()=>{
+    const tCtx=document.getElementById('trendChart');
+    if(tCtx){destroyChart('trend');charts.trend=new Chart(tCtx,{type:'bar',data:{labels:sortedDates,datasets:[{label:'當日營收',data:sortedDates.map(d=>byDate[d].rev),backgroundColor:'#378ADD',borderRadius:3},{label:'每日目標',data:sortedDates.map(()=>DAILY_TARGET),type:'line',borderColor:'#E24B4A',borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0,datalabels:{display:false}}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#5f5e5a',font:{size:11},formatter:v=>v===DAILY_TARGET?'':'$'+(v/10000).toFixed(1)+'萬'}},scales:{x:{ticks:{callback:v=>'$'+(v/10000).toFixed(0)+'萬',font:{size:11}},grid:{color:'rgba(128,128,128,0.08)'}},y:{ticks:{font:{size:11},autoSkip:false},grid:{display:false}}},layout:{padding:{right:60}}}});}
+    renderDiscountChart();renderHourChart();
+    const pCtx=document.getElementById('payChart');
+    if(pCtx){destroyChart('pay');const pKeys=Object.keys(byPay).sort((a,b)=>byPay[b]-byPay[a]),tot=pKeys.reduce((s,k)=>s+byPay[k],0),colors=['#378ADD','#1D9E75','#7F77DD','#D85A30','#D4537E','#888780','#BA7517','#639922'];charts.pay=new Chart(pCtx,{type:'doughnut',data:{labels:pKeys,datasets:[{data:pKeys.map(k=>byPay[k]),backgroundColor:pKeys.map((_,i)=>colors[i%colors.length]),borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{display:true,position:'right',labels:{font:{size:12},padding:10,boxWidth:12}},datalabels:{color:'#fff',font:{size:11,weight:'500'},formatter:v=>{const p=(v/tot*100).toFixed(1);return p>5?p+'%':'';}}}}});}
+  },80);
+}
+function switchTab(name,btn){document.querySelectorAll('.tab-panel').forEach(p=>p.style.display='none');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+name).style.display='block';btn.classList.add('active');}
+async function processFile(file){return new Promise(resolve=>{const reader=new FileReader();reader.onload=e=>resolve({name:file.name,orders:parseXlsx(new Uint8Array(e.target.result))});reader.readAsArrayBuffer(file);});}
+async function handleFiles(files){
+  for(const file of files){
+    if(uploadedFiles.includes(file.name))continue;
+    const {name,orders}=await processFile(file);mergeOrders(orders);uploadedFiles.push(name);
+    const chip=document.createElement('div');chip.className='file-chip';chip.innerHTML=`<i class="ti ti-file" aria-hidden="true"></i>${name} <button onclick="removeAllFiles()" aria-label="清除">×</button>`;document.getElementById('fileList').appendChild(chip);
+  }
+  renderDash();
+}
+function removeAllFiles(){uploadedFiles=[];allOrders=[];adCosts={};Object.keys(charts).forEach(k=>destroyChart(k));document.getElementById('fileList').innerHTML='';selectedDiscountDay='all';selectedHourDay='all';renderDash();}
+document.getElementById('fileInput').addEventListener('change',e=>handleFiles(Array.from(e.target.files)));
+const zone=document.getElementById('uploadZone');
+zone.addEventListener('dragover',e=>{e.preventDefault();zone.style.background='#f5f5f4';});
+zone.addEventListener('dragleave',()=>zone.style.background='');
+zone.addEventListener('drop',e=>{e.preventDefault();zone.style.background='';handleFiles(Array.from(e.dataTransfer.files));});
+</script>
+</body>
+</html>

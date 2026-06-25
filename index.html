@@ -203,16 +203,17 @@ const DISCOUNT_MAP=[
   {key:'TANG350',match:r=>r.discountName&&r.discountName.includes('TANG350')},
   {key:'TU400',match:r=>r.discountName&&r.discountName.includes('TU400')},
   // 以下為各 KOL 專屬折扣碼，key 與 KOL 上線記錄的折扣碼一致，方便精準對帳
-  {key:'GA350',match:r=>r.discountName&&r.discountName.includes('GA350')},
+  {key:'GA350',match:r=>r.discountName&&(r.discountName.includes('GA350')||r.discountName.includes('ga350'))},
   {key:'andy350',match:r=>r.discountName&&r.discountName.includes('andy350')},
-  {key:'DODOMEN350',match:r=>r.discountName&&r.discountName.includes('DODOMEN350')},
+  {key:'DODOMEN350',match:r=>r.discountName&&(r.discountName.includes('DODOMEN350')||r.discountName.includes('dodomen350'))},
   {key:'superglue350',match:r=>r.discountName&&r.discountName.includes('superglue350')},
-  {key:'siaohong350',match:r=>r.discountName&&r.discountName.includes('siaohong350')},
-  {key:'ohmygod350',match:r=>r.discountName&&r.discountName.includes('ohmygod350')},
+  {key:'siaohong350',match:r=>r.discountName&&(r.discountName.includes('siaohong350')||r.discountName.includes('SIAOHONG350'))},
+  {key:'ohmygod350',match:r=>r.discountName&&(r.discountName.includes('ohmygod350')||r.discountName.includes('OHMYGOD350'))},
   {key:'boost350',match:r=>r.discountName&&r.discountName.includes('boost350')},
   {key:'sandra350',match:r=>r.discountName&&r.discountName.includes('sandra350')},
   {key:'bon350',match:r=>r.discountName&&r.discountName.includes('bon350')},
   {key:'torch350',match:r=>r.discountName&&r.discountName.includes('torch350')},
+  {key:'LINDAN350',match:r=>r.discountName&&r.discountName.includes('LINDAN350')},
   {key:'fb35088',match:r=>r.discountName&&r.discountName.includes('fb35088')},
   {key:'測試訂單',match:r=>r.discountName&&r.discountName.includes('TEST_PAYMENT')},
   {key:'其他',match:r=>true},
@@ -240,10 +241,11 @@ let kolPeriods=[
 
 // 依上線日排序（無上線日的排最後）
 kolPeriods.sort((a,b)=>{
-  if(!a.launch_date&&!b.launch_date)return 0;
+  if(!a.launch_date&&!b.launch_date)return (a.kol_name||'').localeCompare(b.kol_name||'');
   if(!a.launch_date)return 1;
   if(!b.launch_date)return -1;
-  return a.launch_date.localeCompare(b.launch_date);
+  const d=a.launch_date.localeCompare(b.launch_date);
+  return d!==0?d:(a.kol_name||'').localeCompare(b.kol_name||'');
 });
 const CAMPAIGN_END_DATE='2026-07-26'; // 所有折扣碼有效期統一到此
 let folderStack=[{id:'sharedWithMe',name:'與我共用'}];
@@ -495,7 +497,7 @@ async function updateKolField(id,field,value){
   if(!p)return;
   p[field]=(field==='price'||field==='min_organic')?(value===''?'':parseFloat(value)||0):value;
   await saveKolPeriod(p);
-  if(field==='launch_date'){
+  if(field==='launch_date'||field==='kol_name'){
     kolPeriods.sort((a,b)=>{
       if(!a.launch_date&&!b.launch_date)return 0;
       if(!a.launch_date)return 1;
@@ -527,39 +529,62 @@ function renderKolAnalysis(){
   const sd=Object.keys(bd).sort();
   if(sd.length===0){el.innerHTML='<div style="font-size:12px;color:var(--t3);padding:8px">尚無資料</div>';return;}
 
-  let html='<div class="tw"><table><thead><tr><th>KOL</th><th>上線日</th><th class="n">上線售價</th><th>折扣碼</th><th class="n">自然轉單低標</th><th class="n">累積使用人次</th><th class="n">累積貢獻營收</th></tr></thead><tbody>';
-
+  const kolMap=new Map();
   kolPeriods.forEach(p=>{
-    const launch=p.launch_date||'';
-    const code=p.discount_code||'';
-    const priceStr=p.price?('$'+Number(p.price).toLocaleString()):'—';
+    const name=p.kol_name||'（未命名）';
+    if(!kolMap.has(name)){
+      kolMap.set(name,{kol_name:name,launch_date:p.launch_date||'',price:p.price,min_organic:p.min_organic,codes:[]});
+    }
+    const entry=kolMap.get(name);
+    if(p.launch_date&&(!entry.launch_date||p.launch_date<entry.launch_date)){
+      entry.launch_date=p.launch_date;entry.price=p.price;entry.min_organic=p.min_organic;
+    }
+    if(p.discount_code){entry.codes.push({code:p.discount_code,launch_date:p.launch_date||''});}
+  });
 
-    // 直接加總 allOrders 中 discountKey===code 且 date>=launch_date(若有設定) 的實際成交總額
-    // 這是「每日上傳報表使用該折扣碼的最終銷售金額」，非估算值
-    let totalUses=0, totalRev=0;
-    if(code){
+  let html='<div class="tw"><table><thead><tr><th>KOL</th><th>上線日</th><th class="n">上線售價</th><th class="n">自然轉單低標</th><th class="n">合計使用人次</th><th class="n">合計貢獻營收</th></tr></thead><tbody>';
+
+  kolMap.forEach(entry=>{
+    const launchStr=entry.launch_date||'<span style="color:var(--t3)">未定</span>';
+    const priceStr=entry.price?('$'+Number(entry.price).toLocaleString()):'—';
+    const minOrgStr=entry.min_organic!==''&&entry.min_organic!==null&&entry.min_organic!==undefined
+      ?Number(entry.min_organic).toLocaleString()+' 人'
+      :'<span style="color:var(--t3)">團購方案</span>';
+
+    let totalUses=0,totalRev=0;
+    const codeStats=[];
+    entry.codes.forEach(({code,launch_date})=>{
+      const variants={};let uses=0,rev=0;
       allOrders.forEach(o=>{
         if(o.discountKey!==code)return;
-        if(launch&&o.date<launch)return;
-        totalUses++;
-        totalRev+=o.total;
+        if(launch_date&&o.date<launch_date)return;
+        uses++;rev+=o.total;
+        const dn=o.discountName||'（空）';
+        variants[dn]=(variants[dn]||0)+1;
       });
+      codeStats.push({code,uses,rev,variants});
+      totalUses+=uses;totalRev+=rev;
+    });
+
+    const usesStr=entry.codes.length>0?totalUses.toLocaleString()+' 人':'—';
+    const revStr=entry.codes.length>0&&totalUses>0?'$'+(totalRev/10000).toFixed(1)+'萬':(entry.codes.length>0?'$0':'—');
+
+    html+=`<tr><td><strong>${entry.kol_name}</strong></td><td style="font-size:11px">${launchStr}</td><td class="n">${priceStr}</td><td class="n">${minOrgStr}</td><td class="n">${usesStr}</td><td class="n">${revStr}</td></tr>`;
+
+    codeStats.forEach(({code,uses,variants})=>{
+      const variantParts=Object.entries(variants).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${k}×${v}`).join('　');
+      const varStr=variantParts?` <span style="color:var(--t3);font-size:10px">(${variantParts})</span>`:'';
+      html+=`<tr style="color:var(--t3)"><td style="padding-left:20px;font-size:11px">↳ ${code}${varStr}</td><td></td><td></td><td></td><td class="n" style="font-size:11px">${uses.toLocaleString()} 人</td><td></td></tr>`;
+    });
+    if(entry.codes.length===0){
+      html+=`<tr style="color:var(--t3)"><td style="padding-left:20px;font-size:11px">↳ <span style="color:var(--t3)">折扣碼未定</span></td><td></td><td></td><td></td><td></td><td></td></tr>`;
     }
-
-    const usesStr=code?totalUses.toLocaleString()+' 人':'—';
-    const revStr=code&&totalUses>0?'$'+(totalRev/10000).toFixed(1)+'萬':(code?'$0':'—');
-    const launchStr=launch||'<span style="color:var(--t3)">未定</span>';
-    const codeStr=code||'<span style="color:var(--t3)">未定</span>';
-
-    const minOrgStr=p.min_organic!==''&&p.min_organic!==null&&p.min_organic!==undefined?Number(p.min_organic).toLocaleString()+' 人':'<span style="color:var(--t3)">團購方案</span>';
-    html+=`<tr><td><strong>${p.kol_name||'<span style="color:var(--t3)">未命名</span>'}</strong></td><td style="font-size:11px">${launchStr}</td><td class="n">${priceStr}</td><td style="font-size:11px">${codeStr}</td><td class="n">${minOrgStr}</td><td class="n">${usesStr}</td><td class="n">${revStr}</td></tr>`;
   });
 
   html+='</tbody></table></div>';
-  html+='<p style="font-size:11px;color:var(--t3);margin-top:8px">累積使用人次／貢獻營收：直接加總每日上傳報表中該折扣碼訂單的實際成交金額（從上線日起算，折扣碼有效期至 7/26）。</p>';
+  html+='<p style="font-size:11px;color:var(--t3);margin-top:8px">合計使用人次／貢獻營收：直接加總每日上傳報表中該 KOL 所有折扣碼訂單的實際成交金額（從上線日起算）。子行括號內顯示各大小寫折扣碼實際出現次數分佈。</p>';
   el.innerHTML=html;
 }
-
 // ── Google Drive ──
 function gdriveConnect(){
   const client=google.accounts.oauth2.initTokenClient({

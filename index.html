@@ -285,6 +285,15 @@ function switchPhase(phase,btn){
   selDiscountDay='all';selHourDay='all';
   renderDash();
 }
+function getPhaseKols(){
+  if(currentPhase===1){
+    return kolPeriods.filter(p=>p.launch_date>='2026-06-09'&&p.launch_date<='2026-07-26');
+  }else if(currentPhase===2){
+    // 第二輪：上線日在 7/27 後，或尚未確定（日期未定視為第二輪規劃中）
+    return kolPeriods.filter(p=>!p.launch_date||p.launch_date>='2026-07-27');
+  }
+  return kolPeriods;
+}
 
 // ── Supabase ──
 const sbH={'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'};
@@ -513,7 +522,7 @@ function renderKolTable(){
   const tbody=document.getElementById('kolTbody');
   if(!tbody)return;
   tbody.innerHTML='';
-  kolPeriods.forEach((p)=>{
+  getPhaseKols().forEach((p)=>{
     const tr=document.createElement('tr');
     tr.innerHTML=`
       <td class="ic"><input class="ni" style="width:120px" type="text" value="${p.kol_name||''}" placeholder="KOL名稱" onchange="updateKolField('${p.id}','kol_name',this.value)"></td>
@@ -566,7 +575,7 @@ function renderKolAnalysis(){
 
   // 以 kol_name 為單位聚合：蒐集所有折扣碼、上線日、售價、低標
   const kolMap=new Map(); // key: kol_name
-  kolPeriods.forEach(p=>{
+  getPhaseKols().forEach(p=>{
     const name=p.kol_name||'（未命名）';
     if(!kolMap.has(name)){
       kolMap.set(name,{
@@ -1022,7 +1031,7 @@ function renderDash(){
       destroyChart('trend');
       // 建立 KOL 上線日標記：在對應日期的 y 軸 label 旁顯示星號標記
       const kolByDate={};
-      kolPeriods.forEach(p=>{if(p.launch_date)kolByDate[p.launch_date]=(kolByDate[p.launch_date]?kolByDate[p.launch_date]+', ':'')+p.kol_name;});
+      getPhaseKols().forEach(p=>{if(p.launch_date)kolByDate[p.launch_date]=(kolByDate[p.launch_date]?kolByDate[p.launch_date]+', ':'')+p.kol_name;});
       charts.trend=new Chart(tC,{type:'bar',data:{labels:sd,datasets:[{label:'當日營收',data:sd.map(d=>bd[d].rev),backgroundColor:sd.map(d=>kolByDate[d]?'#1D9E75':'#378ADD'),borderRadius:3},{label:'每日目標',data:sd.map(()=>pp.dailyTarget),type:'line',borderColor:'#E24B4A',borderDash:[4,4],borderWidth:1.5,pointRadius:0,fill:false,tension:0,datalabels:{display:false}}]},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false},datalabels:{anchor:'end',align:'end',color:'#5f5e5a',font:{size:11},formatter:v=>v===DAILY_TARGET?'':'$'+(v/10000).toFixed(1)+'萬'}},scales:{x:{ticks:{callback:v=>'$'+(v/10000).toFixed(0)+'萬',font:{size:11}},grid:{color:'rgba(128,128,128,0.08)'}},y:{ticks:{font:{size:11},autoSkip:false,callback:function(value,index){const d=sd[index];const label=d?d.slice(5):'';return kolByDate[d]?'★ '+label:label;}},grid:{display:false}}},layout:{padding:{right:60}}}});
     }
     renderDiscountChart();renderHourChart();

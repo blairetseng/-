@@ -264,9 +264,8 @@ function getPhaseParams(){
     const dt=Math.floor((PHASE1_END-PHASE1_START)/86400000)+1;
     return{start:PHASE1_START,end:PHASE1_END,target:PHASE1_TARGET,dailyTarget:Math.round(PHASE1_TARGET/dt),label:'第一輪'};
   }else if(currentPhase===2){
-    // 第二輪顯示兩輪累積進度，對應 5,000萬總目標
-    const phase2Days=Math.floor((PHASE2_END-PHASE2_START)/86400000)+1;
-    return{start:PHASE1_START,end:PHASE2_END,target:TOTAL_TARGET,dailyTarget:Math.round(PHASE2_TARGET/phase2Days),label:'第二輪累積'};
+    const dt=Math.floor((PHASE2_END-PHASE2_START)/86400000)+1;
+    return{start:PHASE2_START,end:PHASE2_END,target:PHASE2_TARGET,dailyTarget:Math.round(PHASE2_TARGET/dt),label:'第二輪'};
   }else{
     const dt=Math.floor((PHASE2_END-PHASE1_START)/86400000)+1;
     return{start:PHASE1_START,end:PHASE2_END,target:TOTAL_TARGET,dailyTarget:Math.round(TOTAL_TARGET/dt),label:'整體'};
@@ -274,9 +273,53 @@ function getPhaseParams(){
 }
 function getPhaseOrders(phase){
   if(phase===1){return allOrders.filter(o=>o.date>='2026-06-09'&&o.date<='2026-07-26');}
-  // 第二輪顯示兩輪累積（含第一輪），因目標是兩輪合計 5,000萬
-  if(phase===2){return allOrders.filter(o=>o.date>='2026-06-09'&&o.date<='2026-09-28');}
+  if(phase===2){return allOrders.filter(o=>o.date>='2026-07-27'&&o.date<='2026-09-28');}
   return allOrders;
+}
+// 計算特定日期區間的彙總指標（for 整體總覽比較、第二輪累積進度）
+function buildPhaseStats(startDate,endDate){
+  const orders=allOrders.filter(o=>o.date>=startDate&&o.date<=endDate&&o.discountKey!=='_hour_only'&&o.discountKey!=='_pay_only'&&o.discountKey!=='測試訂單');
+  const bd={};
+  orders.forEach(o=>{if(!bd[o.date])bd[o.date]={rev:0,cnt:0};bd[o.date].rev+=o.total;bd[o.date].cnt++;});
+  if(window._dailySummaryCache){window._dailySummaryCache.filter(r=>r.date>=startDate&&r.date<=endDate).forEach(r=>{if(bd[r.date]){bd[r.date].rev=r.revenue;bd[r.date].cnt=r.orders;}});}
+  const days=Object.keys(bd).length;
+  const rev=Object.values(bd).reduce((s,d)=>s+d.rev,0);
+  const cnt=Object.values(bd).reduce((s,d)=>s+d.cnt,0);
+  return{rev,cnt,days,avgDaily:days>0?rev/days:0,avgOrder:cnt>0?rev/cnt:0};
+}
+function buildOverallSummary(){
+  const p1=buildPhaseStats('2026-06-09','2026-07-26');
+  const p2=buildPhaseStats('2026-07-27','2026-09-28');
+  const totalRev=p1.rev+p2.rev,totalCnt=p1.cnt+p2.cnt;
+  const pct=(totalRev/TOTAL_TARGET*100).toFixed(1);
+  const remaining=Math.max(0,TOTAL_TARGET-totalRev);
+  const phase2End=new Date('2026-09-28T00:00:00+08:00');
+  const now=new Date();
+  const remDays=Math.max(0,Math.floor((phase2End-now)/86400000));
+  const dailyNeeded=remDays>0?remaining/remDays:0;
+  const p1Pct=(p1.rev/PHASE1_TARGET*100).toFixed(1);
+  let html=`<div class="sum-body">`;
+  html+=`📊 <strong>整體進度</strong> <span class="${parseFloat(pct)>=100?'hi':parseFloat(pct)>=80?'mid':'lo'}">${pct}%</span>，兩輪累積 <strong>$${(totalRev/10000).toFixed(1)}萬</strong>／5,000萬。`;
+  html+=remaining>0?`距目標還需 <span class="lo">$${(remaining/10000).toFixed(1)}萬</span>${remDays>0?`，每日需達 <strong>$${(dailyNeeded/10000).toFixed(1)}萬</strong>`:'（活動已結束）'}。`:'<span class="hi">目標達成！</span>';
+  html+=`<br><br><strong>🔵 第一輪（6/9–7/26）</strong><br>`;
+  if(p1.days>0){html+=`累積 <strong>$${(p1.rev/10000).toFixed(1)}萬</strong>（${p1.days} 天，${p1.cnt.toLocaleString()} 筆），目標（3,000萬）達成率 <span class="${parseFloat(p1Pct)>=100?'hi':parseFloat(p1Pct)>=80?'mid':'lo'}">${p1Pct}%</span>，日均 <strong>$${(p1.avgDaily/10000).toFixed(1)}萬</strong>，均單 <strong>$${Math.round(p1.avgOrder).toLocaleString()}</strong>。`;}
+  else{html+=`尚無第一輪資料。`;}
+  html+=`<br><br><strong>🟢 第二輪（7/27–9/28）</strong><br>`;
+  if(p2.days>0){
+    const p2Pct=(p2.rev/PHASE2_TARGET*100).toFixed(1);
+    const dg=p1.avgDaily>0?((p2.avgDaily/p1.avgDaily-1)*100):null;
+    const og=p1.avgOrder>0?((p2.avgOrder/p1.avgOrder-1)*100):null;
+    html+=`累積 <strong>$${(p2.rev/10000).toFixed(1)}萬</strong>（${p2.days} 天，${p2.cnt.toLocaleString()} 筆），目標（2,000萬）達成率 <span class="${parseFloat(p2Pct)>=100?'hi':'mid'}">${p2Pct}%</span>，`;
+    html+=`日均 <strong>$${(p2.avgDaily/10000).toFixed(1)}萬</strong>${dg!==null?`（<span class="${dg>=0?'hi':'lo'}">${dg>=0?'+':''}${dg.toFixed(0)}% vs 第一輪</span>）`:''}，`;
+    html+=`均單 <strong>$${Math.round(p2.avgOrder).toLocaleString()}</strong>${og!==null?`（<span class="${og>=0?'hi':'lo'}">${og>=0?'+':''}${og.toFixed(0)}% vs 第一輪</span>）`:''}。`;
+  }else{
+    const need64=PHASE2_TARGET/64;
+    html+=`尚未開始。第二輪需在 64 天達成 $2,000萬（日均需達 <strong>$${(need64/10000).toFixed(1)}萬</strong>`;
+    if(p1.avgDaily>0)html+=`，較第一輪日均 <span class="${need64>p1.avgDaily?'lo':'hi'}">${((need64/p1.avgDaily-1)*100).toFixed(0)}%</span>`;
+    html+=`）。`;
+  }
+  html+=`</div>`;
+  return html;
 }
 function switchPhase(phase,btn){
   currentPhase=phase;
@@ -835,10 +878,13 @@ function getTotalAdCost(){return Object.values(adCosts).reduce((s,v)=>s+v,0);}
 function getPretestAd(){return adCosts['pretest']||0;}
 function getTotalCost(){return getTotalFixedCost()+getTotalAdCost()+getPaymentCost();}
 
-function buildSummary(sd,bd,tr){
+function buildSummary(sd,bd,tr,opts){
   if(!sd.length)return'';
   const pp=getPhaseParams();
   const CAMPAIGN_START=pp.start,CAMPAIGN_END=pp.end,PHASE_TARGET=pp.target,DAILY_TARGET=pp.dailyTarget;
+  // opts.trCumul / opts.targetCumul：第二輪使用累積數字計算距目標距離
+  const trForGoal=opts?.trCumul??tr;
+  const targetForGoal=opts?.targetCumul??PHASE_TARGET;
   const ld=sd[sd.length-1],today=bd[ld];
   const tc=getTotalCost(),ac=getTotalAdCost(),gp=tr-tc,roi=tc>0?((tr/tc-1)*100):null;
   // 以資料最後一天為基準，而非今天
@@ -846,7 +892,7 @@ function buildSummary(sd,bd,tr){
   const dp=Math.max(1,Math.floor((lastDate-CAMPAIGN_START)/86400000)+1);
   const dl=Math.max(0,Math.floor((CAMPAIGN_END-lastDate)/86400000));
   const ct=Math.min(dp*DAILY_TARGET,PHASE_TARGET),cp=(tr/ct*100);
-  const dn=dl>0?(Math.max(0,PHASE_TARGET-tr)/dl):0;
+  const dn=dl>0?(Math.max(0,targetForGoal-trForGoal)/dl):0;
   const ds=today.rev>=DAILY_TARGET?`<span class="hi">超標 $${((today.rev-DAILY_TARGET)/10000).toFixed(1)}萬</span>`:`<span class="lo">未達標，缺口 $${((DAILY_TARGET-today.rev)/10000).toFixed(1)}萬</span>`;
   const phaseOrders=getPhaseOrders(currentPhase);
   const byD={};phaseOrders.filter(o=>o.date===ld&&o.discountKey!=='_hour_only'&&o.discountKey!=='_pay_only').forEach(o=>{byD[o.discountKey]=(byD[o.discountKey]||0)+1;});
@@ -856,7 +902,7 @@ function buildSummary(sd,bd,tr){
   const ps=cp>=110?`<span class="hi">大幅超前（${cp.toFixed(0)}%）</span>`:cp>=100?`<span class="hi">符合進度（${cp.toFixed(0)}%）</span>`:cp>=85?`<span class="mid">略微落後（${cp.toFixed(0)}%）</span>`:`<span class="lo">明顯落後（${cp.toFixed(0)}%）</span>`;
   const prs=gp>=0?`<span class="hi">+$${(gp/10000).toFixed(1)}萬</span>`:`<span class="lo">-$${(Math.abs(gp)/10000).toFixed(1)}萬（尚未回本）</span>`;
   const rs=roi!==null?(roi>=0?`<span class="hi">ROI ${roi.toFixed(0)}%</span>`:`<span class="lo">ROI ${roi.toFixed(0)}%</span>`):'尚無成本資料';
-  return`<div class="sum-body">📅 <strong>${ld} 日報</strong><br>當日營收 <strong>$${(today.rev/10000).toFixed(1)}萬</strong>（${today.cnt} 筆），${ds}，購買高峰 <strong>${peak}:00–${peak+1}:00</strong>。${top?` 最活躍渠道 <strong>${top[0]}</strong>（${top[1]} 筆）。`:''}<br><br>📊 <strong>累積進度</strong> ${ps}，累積 $${(tr/10000).toFixed(1)}萬。${dl>0?` 剩餘 ${dl} 天每日需達 <strong class="${dn>DAILY_TARGET*1.3?'lo':dn>DAILY_TARGET?'mid':'hi'}">$${(dn/10000).toFixed(1)}萬</strong>。`:'活動已結束。'}<br><br>💰 <strong>損益</strong> 累積毛利 ${prs}，${rs}（固定 $${(getTotalFixedCost()/10000).toFixed(1)}萬 + 廣告 $${(ac/10000).toFixed(1)}萬 + 金流 $${(getPaymentCost()/10000).toFixed(1)}萬）。${ac===0?' <span class="mid">⚠ 尚未填入廣告成本，損益僅供參考。</span>':''}</div>`;
+  return`<div class="sum-body">📅 <strong>${ld} 日報</strong><br>當日營收 <strong>$${(today.rev/10000).toFixed(1)}萬</strong>（${today.cnt} 筆），${ds}，購買高峰 <strong>${peak}:00–${peak+1}:00</strong>。${top?` 最活躍渠道 <strong>${top[0]}</strong>（${top[1]} 筆）。`:''}<br><br>📊 <strong>累積進度</strong> ${ps}，累積 $${(trForGoal/10000).toFixed(1)}萬${currentPhase===2?' （兩輪合計）':''}。${dl>0?` 剩餘 ${dl} 天每日需達 <strong class="${dn>DAILY_TARGET*1.3?'lo':dn>DAILY_TARGET?'mid':'hi'}">$${(dn/10000).toFixed(1)}萬</strong>。`:'活動已結束。'}<br><br>💰 <strong>損益</strong> 累積毛利 ${prs}，${rs}（固定 $${(getTotalFixedCost()/10000).toFixed(1)}萬 + 廣告 $${(ac/10000).toFixed(1)}萬 + 金流 $${(getPaymentCost()/10000).toFixed(1)}萬）。${ac===0?' <span class="mid">⚠ 尚未填入廣告成本，損益僅供參考。</span>':''}</div>`;
 }
 
 function getDiscountData(day){
@@ -905,7 +951,13 @@ function updateAllCostDisplays(){
   const pc_el=document.getElementById('paymentCostDisplay');if(pc_el)pc_el.textContent='$'+(pc/10000).toFixed(1)+'萬';
   updateSummary();
 }
-function updateSummary(){const bd=getByDate(),sd=Object.keys(bd).sort(),tr=getPhaseOrders(currentPhase).reduce((s,o)=>s+o.total,0);const el=document.getElementById('sumBody');if(el)el.innerHTML=buildSummary(sd,bd,tr);}
+function updateSummary(){
+  const bd=getByDate(),sd=Object.keys(bd).sort(),tr=getPhaseOrders(currentPhase).reduce((s,o)=>s+o.total,0);
+  const el=document.getElementById('sumBody');if(!el)return;
+  if(currentPhase==='all'){el.innerHTML=buildOverallSummary();return;}
+  const opts=currentPhase===2?{trCumul:buildPhaseStats('2026-06-09','2026-09-28').rev,targetCumul:TOTAL_TARGET}:undefined;
+  el.innerHTML=buildSummary(sd,bd,tr,opts);
+}
 async function updateFixedCostItem(id,input){const val=parseInt(input.value)||0;const item=fixedCostItems.find(i=>i.id===id);if(item)item.value=val;updateAllCostDisplays();setSyncStatus('loading');await sbSet('fixed_'+id,val);setSyncStatus('saved','固定成本已儲存');}
 function refreshDetailRow(date){const row=document.querySelector(`tr[data-date="${date}"]`);if(!row)return;const cells=row.querySelectorAll('td'),rev=parseInt(row.dataset.rev)||0,av=adCosts[date]||0,dp=rev-av;const inp=row.querySelector('.ai');if(inp)inp.value=av||'';cells[6].textContent=(dp>=0?'+':'-')+'$'+(Math.abs(dp)/10000).toFixed(1)+'萬';cells[6].className='n '+(dp>=0?'ok':'bad');}
 async function updateAdCost(input){const date=input.dataset.date;adCosts[date]=parseInt(input.value)||0;const qi=document.getElementById('qai'),qd=document.getElementById('qad');if(qi&&qd&&qd.value===date)qi.value=adCosts[date]||'';refreshDetailRow(date);updateAllCostDisplays();setSyncStatus('loading');await sbSet('ad_'+date,adCosts[date]);setSyncStatus('saved','廣告成本已儲存');}
@@ -924,6 +976,9 @@ function renderDash(){
   const dl=Math.max(0,Math.floor((CAMPAIGN_END-lastDate)/86400000));
   const ct=Math.min(dp*DAILY_TARGET,PHASE_TARGET),pct=(tr/PHASE_TARGET*100).toFixed(1),cpt=(tr/ct*100).toFixed(1);
   const fc=getTotalFixedCost(),ac=getTotalAdCost(),tc=getTotalCost(),gp=tr-tc,roi=tc>0?((tr/tc-1)*100):null;
+  // 第二輪：另算兩輪累積指標（進度條＆指標卡用），圖表仍用 7/27+ 資料
+  let tr_disp=tr,target_disp=PHASE_TARGET,pct_disp=(tr/PHASE_TARGET*100).toFixed(1);
+  if(currentPhase===2){const cs=buildPhaseStats('2026-06-09','2026-09-28');tr_disp=cs.rev;target_disp=TOTAL_TARGET;pct_disp=(cs.rev/TOTAL_TARGET*100).toFixed(1);}
   const byPay={};getPhaseOrders(currentPhase).forEach(o=>{
     if(!o.payMethod)return;
     if(o.discountKey==='_hour_only')return; // 排除時段虛擬訂單
@@ -933,16 +988,23 @@ function renderDash(){
   const ld=sd[sd.length-1]||'';
   document.getElementById('dashContent').innerHTML=`
     <div class="metric-grid">
+      ${currentPhase===2?`
+      <div class="metric"><div class="metric-label">兩輪累積營收</div><div class="metric-value">$${(tr_disp/10000).toFixed(1)}萬</div><div class="metric-sub">目標 $${(target_disp/10000).toFixed(0)}萬</div></div>
+      <div class="metric"><div class="metric-label">兩輪總達成率</div><div class="metric-value">${pct_disp}%</div><div class="metric-sub">距目標 $${(Math.max(0,target_disp-tr_disp)/10000).toFixed(1)}萬</div></div>
+      <div class="metric"><div class="metric-label">第二輪進度</div><div class="metric-value ${parseFloat(cpt)>=100?'ok':'warn'}">${cpt}%</div><div class="metric-sub">第二輪目標 $${(PHASE_TARGET/10000).toFixed(0)}萬</div></div>
+      <div class="metric"><div class="metric-label">第二輪訂單數</div><div class="metric-value">${to.toLocaleString()}</div><div class="metric-sub">${sd.length} 天資料（7/27起）</div></div>
+      `:`
       <div class="metric"><div class="metric-label">累計營收</div><div class="metric-value">$${(tr/10000).toFixed(1)}萬</div><div class="metric-sub">目標 $${(PHASE_TARGET/10000).toFixed(0)}萬</div></div>
-      <div class="metric"><div class="metric-label">${pp.label}目標達成率</div><div class="metric-value">${pct}%</div><div class="metric-sub">目標 $${(PHASE_TARGET/10000).toFixed(0)}萬</div></div>
+      <div class="metric"><div class="metric-label">${pp.label}目標達成率</div><div class="metric-value">${pct_disp}%</div><div class="metric-sub">目標 $${(PHASE_TARGET/10000).toFixed(0)}萬</div></div>
       <div class="metric"><div class="metric-label">當期達成率</div><div class="metric-value ${parseFloat(cpt)>=100?'ok':'warn'}">${cpt}%</div><div class="metric-sub">應走進度 $${(ct/10000).toFixed(1)}萬</div></div>
       <div class="metric"><div class="metric-label">總訂單數</div><div class="metric-value">${to.toLocaleString()}</div><div class="metric-sub">${sd.length} 天資料</div></div>
+      `}
     </div>
-    <div class="sum-card"><div class="sum-title"><i class="ti ti-sparkles"></i> 每日銷售總結</div><div id="sumBody">${buildSummary(sd,bd,tr)}</div></div>
-    <div class="card"><div class="sl">${pp.label}目標達成進度</div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:4px"><span>$${(tr/10000).toFixed(1)}萬 / $${(PHASE_TARGET/10000).toFixed(0)}萬</span><span>${pct}%</span></div>
-      <div class="prog-wrap"><div class="prog-bar ${parseFloat(pct)>=100?'over':''}" style="width:${Math.min(parseFloat(pct),100)}%"></div></div>
-      <div style="font-size:11px;color:var(--t3);margin-top:4px">距目標還需 $${Math.max(0,(PHASE_TARGET-tr)/10000).toFixed(1)}萬 | 剩餘 ${dl} 天 | 每日需達 $${dl>0?((Math.max(0,PHASE_TARGET-tr)/dl)/10000).toFixed(1):'0'}萬</div>
+    <div class="sum-card"><div class="sum-title"><i class="ti ti-sparkles"></i> ${currentPhase==='all'?'活動總覽（PM 視角）':'每日銷售總結'}</div><div id="sumBody">${currentPhase==='all'?buildOverallSummary():buildSummary(sd,bd,tr,currentPhase===2?{trCumul:tr_disp,targetCumul:target_disp}:undefined)}</div></div>
+    <div class="card"><div class="sl">${currentPhase===2?'兩輪累積目標達成進度':pp.label+'目標達成進度'}</div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--t2);margin-bottom:4px"><span>$${(tr_disp/10000).toFixed(1)}萬 / $${(target_disp/10000).toFixed(0)}萬</span><span>${pct_disp}%</span></div>
+      <div class="prog-wrap"><div class="prog-bar ${parseFloat(pct_disp)>=100?'over':''}" style="width:${Math.min(parseFloat(pct_disp),100)}%"></div></div>
+      <div style="font-size:11px;color:var(--t3);margin-top:4px">距目標還需 $${Math.max(0,(target_disp-tr_disp)/10000).toFixed(1)}萬 | 剩餘 ${dl} 天 | 每日需達 $${dl>0?((Math.max(0,target_disp-tr_disp)/dl)/10000).toFixed(1):'0'}萬</div>
     </div>
     <div class="cost-sec"><div class="sl" style="margin-bottom:2px">💸 專案成本控制</div>
       <p style="font-size:12px;color:var(--t3);margin-bottom:6px">固定成本可直接修改；今日廣告花費填入後點「套用」，自動同步雲端。</p>

@@ -190,8 +190,8 @@ const GOOGLE_CLIENT_ID='849110261675-hbgs9b7r9dl2gm2qrm5mmu8j1qc2fc2m.apps.googl
 const SB_URL='https://jbidtnredgrzrrxruxrd.supabase.co';
 const SB_KEY='sb_publishable_KjdR6XvT0VXRkgYFywWn4g_mxeGbaae';
 const TOTAL_TARGET=50000000;
-const PHASE1_START=new Date('2026-06-09T00:00:00+08:00'),PHASE1_END=new Date('2026-07-26T00:00:00+08:00'),PHASE1_TARGET=20000000;
-const PHASE2_START=new Date('2026-07-27T00:00:00+08:00'),PHASE2_END=new Date('2026-09-28T00:00:00+08:00'),PHASE2_TARGET=30000000;
+const PHASE1_START=new Date('2026-06-09T00:00:00+08:00'),PHASE1_END=new Date('2026-07-26T00:00:00+08:00'),PHASE1_TARGET=30000000;
+const PHASE2_START=new Date('2026-07-27T00:00:00+08:00'),PHASE2_END=new Date('2026-09-28T00:00:00+08:00'),PHASE2_TARGET=20000000;
 let currentPhase=1;
 const fixedCostItems=[
   {id:'prep',label:'前置準備',value:1200000},
@@ -264,8 +264,9 @@ function getPhaseParams(){
     const dt=Math.floor((PHASE1_END-PHASE1_START)/86400000)+1;
     return{start:PHASE1_START,end:PHASE1_END,target:PHASE1_TARGET,dailyTarget:Math.round(PHASE1_TARGET/dt),label:'第一輪'};
   }else if(currentPhase===2){
-    const dt=Math.floor((PHASE2_END-PHASE2_START)/86400000)+1;
-    return{start:PHASE2_START,end:PHASE2_END,target:PHASE2_TARGET,dailyTarget:Math.round(PHASE2_TARGET/dt),label:'第二輪'};
+    // 第二輪顯示兩輪累積進度，對應 5,000萬總目標
+    const phase2Days=Math.floor((PHASE2_END-PHASE2_START)/86400000)+1;
+    return{start:PHASE1_START,end:PHASE2_END,target:TOTAL_TARGET,dailyTarget:Math.round(PHASE2_TARGET/phase2Days),label:'第二輪累積'};
   }else{
     const dt=Math.floor((PHASE2_END-PHASE1_START)/86400000)+1;
     return{start:PHASE1_START,end:PHASE2_END,target:TOTAL_TARGET,dailyTarget:Math.round(TOTAL_TARGET/dt),label:'整體'};
@@ -273,7 +274,8 @@ function getPhaseParams(){
 }
 function getPhaseOrders(phase){
   if(phase===1){return allOrders.filter(o=>o.date>='2026-06-09'&&o.date<='2026-07-26');}
-  if(phase===2){return allOrders.filter(o=>o.date>='2026-07-27'&&o.date<='2026-09-28');}
+  // 第二輪顯示兩輪累積（含第一輪），因目標是兩輪合計 5,000萬
+  if(phase===2){return allOrders.filter(o=>o.date>='2026-06-09'&&o.date<='2026-09-28');}
   return allOrders;
 }
 function switchPhase(phase,btn){

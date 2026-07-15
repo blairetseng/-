@@ -190,8 +190,8 @@ const GOOGLE_CLIENT_ID='849110261675-hbgs9b7r9dl2gm2qrm5mmu8j1qc2fc2m.apps.googl
 const SB_URL='https://jbidtnredgrzrrxruxrd.supabase.co';
 const SB_KEY='sb_publishable_KjdR6XvT0VXRkgYFywWn4g_mxeGbaae';
 const TOTAL_TARGET=50000000;
-const PHASE1_START=new Date('2026-06-09T00:00:00+08:00'),PHASE1_END=new Date('2026-07-26T00:00:00+08:00'),PHASE1_TARGET=30000000;
-const PHASE2_START=new Date('2026-07-27T00:00:00+08:00'),PHASE2_END=new Date('2026-09-28T00:00:00+08:00'),PHASE2_TARGET=20000000;
+const PHASE1_START=new Date('2026-06-09T00:00:00+08:00'),PHASE1_END=new Date('2026-07-26T00:00:00+08:00'),PHASE1_TARGET=35000000;
+const PHASE2_START=new Date('2026-07-27T00:00:00+08:00'),PHASE2_END=new Date('2026-09-28T00:00:00+08:00'),PHASE2_TARGET=15000000;
 let currentPhase=1;
 const fixedCostItems=[
   {id:'prep',label:'前置準備',value:1200000},
@@ -302,19 +302,19 @@ function buildOverallSummary(){
   html+=`📊 <strong>整體進度</strong> <span class="${parseFloat(pct)>=100?'hi':parseFloat(pct)>=80?'mid':'lo'}">${pct}%</span>，兩輪累積 <strong>$${(totalRev/10000).toFixed(1)}萬</strong>／5,000萬。`;
   html+=remaining>0?`距目標還需 <span class="lo">$${(remaining/10000).toFixed(1)}萬</span>${remDays>0?`，每日需達 <strong>$${(dailyNeeded/10000).toFixed(1)}萬</strong>`:'（活動已結束）'}。`:'<span class="hi">目標達成！</span>';
   html+=`<br><br><strong>🔵 第一輪（6/9–7/26）</strong><br>`;
-  if(p1.days>0){html+=`累積 <strong>$${(p1.rev/10000).toFixed(1)}萬</strong>（${p1.days} 天，${p1.cnt.toLocaleString()} 筆），目標（3,000萬）達成率 <span class="${parseFloat(p1Pct)>=100?'hi':parseFloat(p1Pct)>=80?'mid':'lo'}">${p1Pct}%</span>，日均 <strong>$${(p1.avgDaily/10000).toFixed(1)}萬</strong>，均單 <strong>$${Math.round(p1.avgOrder).toLocaleString()}</strong>。`;}
+  if(p1.days>0){html+=`累積 <strong>$${(p1.rev/10000).toFixed(1)}萬</strong>（${p1.days} 天，${p1.cnt.toLocaleString()} 筆），目標（${(PHASE1_TARGET/10000).toFixed(0)}萬）達成率 <span class="${parseFloat(p1Pct)>=100?'hi':parseFloat(p1Pct)>=80?'mid':'lo'}">${p1Pct}%</span>，日均 <strong>$${(p1.avgDaily/10000).toFixed(1)}萬</strong>，均單 <strong>$${Math.round(p1.avgOrder).toLocaleString()}</strong>。`;}
   else{html+=`尚無第一輪資料。`;}
   html+=`<br><br><strong>🟢 第二輪（7/27–9/28）</strong><br>`;
   if(p2.days>0){
     const p2Pct=(p2.rev/PHASE2_TARGET*100).toFixed(1);
     const dg=p1.avgDaily>0?((p2.avgDaily/p1.avgDaily-1)*100):null;
     const og=p1.avgOrder>0?((p2.avgOrder/p1.avgOrder-1)*100):null;
-    html+=`累積 <strong>$${(p2.rev/10000).toFixed(1)}萬</strong>（${p2.days} 天，${p2.cnt.toLocaleString()} 筆），目標（2,000萬）達成率 <span class="${parseFloat(p2Pct)>=100?'hi':'mid'}">${p2Pct}%</span>，`;
+    html+=`累積 <strong>$${(p2.rev/10000).toFixed(1)}萬</strong>（${p2.days} 天，${p2.cnt.toLocaleString()} 筆），目標（${(PHASE2_TARGET/10000).toFixed(0)}萬）達成率 <span class="${parseFloat(p2Pct)>=100?'hi':'mid'}">${p2Pct}%</span>，`;
     html+=`日均 <strong>$${(p2.avgDaily/10000).toFixed(1)}萬</strong>${dg!==null?`（<span class="${dg>=0?'hi':'lo'}">${dg>=0?'+':''}${dg.toFixed(0)}% vs 第一輪</span>）`:''}，`;
     html+=`均單 <strong>$${Math.round(p2.avgOrder).toLocaleString()}</strong>${og!==null?`（<span class="${og>=0?'hi':'lo'}">${og>=0?'+':''}${og.toFixed(0)}% vs 第一輪</span>）`:''}。`;
   }else{
     const need64=PHASE2_TARGET/64;
-    html+=`尚未開始。第二輪需在 64 天達成 $2,000萬（日均需達 <strong>$${(need64/10000).toFixed(1)}萬</strong>`;
+    html+=`尚未開始。第二輪需在 64 天達成 $${(PHASE2_TARGET/10000).toFixed(0)}萬（日均需達 <strong>$${(need64/10000).toFixed(1)}萬</strong>`;
     if(p1.avgDaily>0)html+=`，較第一輪日均 <span class="${need64>p1.avgDaily?'lo':'hi'}">${((need64/p1.avgDaily-1)*100).toFixed(0)}%</span>`;
     html+=`）。`;
   }

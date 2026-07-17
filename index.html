@@ -222,8 +222,12 @@ const DISCOUNT_MAP=[
   {key:'LINDAN350',match:r=>r.discountName&&r.discountName.includes('LINDAN350')},
   {key:'imserious350',match:r=>r.discountName&&r.discountName.includes('imserious350')},
   {key:'youngig350',match:r=>r.discountName&&r.discountName.includes('youngig350')},
-  {key:'WTF350',match:r=>r.discountName&&r.discountName.includes('WTF350')},
+  {key:'WTF350',match:r=>r.discountName&&(r.discountName.includes('WTF350')||r.discountName.includes('wtf350'))},
   {key:'fb35088',match:r=>r.discountName&&r.discountName.includes('fb35088')},
+  {key:'GA350',match:r=>r.discountName&&(r.discountName.includes('GA350')||r.discountName.includes('ga350'))},
+  {key:'siaohong350',match:r=>r.discountName&&(r.discountName.includes('siaohong350')||r.discountName.includes('SIAOHONG350'))},
+  {key:'DODOMEN350',match:r=>r.discountName&&(r.discountName.includes('DODOMEN350')||r.discountName.includes('dodomen350'))},
+  {key:'ohmygod350',match:r=>r.discountName&&(r.discountName.includes('ohmygod350')||r.discountName.includes('OHMYGOD350'))},
   {key:'測試訂單',match:r=>r.discountName&&r.discountName.includes('TEST_PAYMENT')},
   {key:'其他',match:r=>true},
 ];

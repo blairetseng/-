@@ -228,6 +228,8 @@ const DISCOUNT_MAP=[
   {key:'siaohong350',match:r=>r.discountName&&r.discountName.toUpperCase().includes('SIAOHONG350')},
   {key:'DODOMEN350',match:r=>r.discountName&&r.discountName.toUpperCase().includes('DODOMEN350')},
   {key:'ohmygod350',match:r=>r.discountName&&r.discountName.toUpperCase().includes('OHMYGOD350')},
+  {key:'drama350',match:r=>r.discountName&&(r.discountName.includes('drama350')||r.discountName.includes('DRAMA350'))},
+  {key:'ted350',match:r=>r.discountName&&(r.discountName.includes('ted350')||r.discountName.includes('TED350'))},
   {key:'測試訂單',match:r=>r.discountName&&r.discountName.includes('TEST_PAYMENT')},
   {key:'其他',match:r=>true},
 ];

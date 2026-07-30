@@ -745,7 +745,7 @@ async function loadFolder(folderId){
       :folderId==='root'
       ?`'root' in parents and trashed=false`
       :`'${folderId}' in parents and trashed=false`;
-    const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&orderBy=folder,name&fields=files(id,name,mimeType,modifiedTime)&pageSize=50`,{headers:{'Authorization':`Bearer ${gToken}`}});
+    const r=await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&orderBy=folder,name&fields=files(id,name,mimeType,modifiedTime)&pageSize=1000`,{headers:{'Authorization':`Bearer ${gToken}`}});
     const d=await r.json();
     if(!d.files||d.files.length===0){listEl.innerHTML='<div style="font-size:12px;color:var(--t3);padding:8px">此資料夾沒有檔案</div>';return;}
     listEl.innerHTML='';

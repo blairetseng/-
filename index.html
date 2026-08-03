@@ -353,7 +353,7 @@ function getPhaseKols(){
 const sbH={'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'};
 
 async function sbSet(key,value){
-  try{await fetch(`${SB_URL}/rest/v1/costs`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({key,value:Number(value)})});}catch(e){}
+  try{const r=await fetch(`${SB_URL}/rest/v1/costs`,{method:'POST',headers:{...sbH,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify({key,value:Number(value)})});if(!r.ok){setSyncStatus('error');return false;}return true;}catch(e){setSyncStatus('error');return false;}
 }
 
 async function loadAllCosts(){
@@ -979,8 +979,8 @@ function updateSummary(){
 }
 async function updateFixedCostItem(id,input){const val=parseInt(input.value)||0;const item=fixedCostItems.find(i=>i.id===id);if(item)item.value=val;updateAllCostDisplays();setSyncStatus('loading');await sbSet('fixed_'+id,val);setSyncStatus('saved','固定成本已儲存');}
 function refreshDetailRow(date){const row=document.querySelector(`tr[data-date="${date}"]`);if(!row)return;const cells=row.querySelectorAll('td'),rev=parseInt(row.dataset.rev)||0,av=adCosts[date]||0,dp=rev-av;const inp=row.querySelector('.ai');if(inp)inp.value=av||'';cells[6].textContent=(dp>=0?'+':'-')+'$'+(Math.abs(dp)/10000).toFixed(1)+'萬';cells[6].className='n '+(dp>=0?'ok':'bad');}
-async function updateAdCost(input){const date=input.dataset.date;adCosts[date]=parseInt(input.value)||0;const qi=document.getElementById('qai'),qd=document.getElementById('qad');if(qi&&qd&&qd.value===date)qi.value=adCosts[date]||'';refreshDetailRow(date);updateAllCostDisplays();setSyncStatus('loading');await sbSet('ad_'+date,adCosts[date]);setSyncStatus('saved','廣告成本已儲存');}
-async function applyQuickAd(){const date=document.getElementById('qad').value,val=parseInt(document.getElementById('qai').value)||0;if(!date){alert('請先選擇日期');return;}adCosts[date]=val;refreshDetailRow(date);updateAllCostDisplays();const btn=document.getElementById('qab');btn.textContent='儲存中...';btn.style.background='#BA7517';setSyncStatus('loading');await sbSet('ad_'+date,val);btn.textContent='已儲存 ✓';btn.style.background='#1D9E75';setSyncStatus('saved','廣告成本已儲存');setTimeout(()=>{btn.textContent='套用';btn.style.background='#378ADD';},1500);}
+async function updateAdCost(input){const date=input.dataset.date;if(input.value.trim()===''){input.value=(adCosts[date]!=null?adCosts[date]:'');return;}adCosts[date]=parseInt(input.value)||0;const qi=document.getElementById('qai'),qd=document.getElementById('qad');if(qi&&qd&&qd.value===date)qi.value=adCosts[date]||'';refreshDetailRow(date);updateAllCostDisplays();setSyncStatus('loading');const ok=await sbSet('ad_'+date,adCosts[date]);if(ok)setSyncStatus('saved','廣告成本已儲存');}
+async function applyQuickAd(){const date=document.getElementById('qad').value;const raw=document.getElementById('qai').value.trim();if(!date){alert('請先選擇日期');return;}if(raw===''){alert('請輸入金額，若當日無投放請輸入 0');return;}const val=parseInt(raw)||0;adCosts[date]=val;refreshDetailRow(date);updateAllCostDisplays();const btn=document.getElementById('qab');btn.textContent='儲存中...';btn.style.background='#BA7517';setSyncStatus('loading');const ok=await sbSet('ad_'+date,val);if(ok){btn.textContent='已儲存 ✓';btn.style.background='#1D9E75';setSyncStatus('saved','廣告成本已儲存');}else{btn.textContent='儲存失敗';btn.style.background='#E24B4A';}setTimeout(()=>{btn.textContent='套用';btn.style.background='#378ADD';},1500);}
 
 function renderDash(){
   if(allOrders.length===0){document.getElementById('dashContent').innerHTML=`<div class="empty"><i class="ti ti-chart-bar" style="font-size:32px;display:block;margin-bottom:8px"></i>從 Google 雲端載入或手動上傳報表後，圖表將自動出現</div>`;return;}

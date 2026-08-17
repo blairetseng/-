@@ -194,9 +194,9 @@ const PHASE1_START=new Date('2026-06-09T00:00:00+08:00'),PHASE1_END=new Date('20
 const PHASE2_START=new Date('2026-07-27T00:00:00+08:00'),PHASE2_END=new Date('2026-09-28T00:00:00+08:00'),PHASE2_TARGET=15000000;
 let currentPhase=1;
 const fixedCostItems=[
-  {id:'prep',label:'製課與前置調研',value:1200000},
+  {id:'prep',label:'製課與前置調研',value:454776},
   {id:'kol',label:'第一輪 KOL 費用',value:2000000},
-  {id:'kol_phase2',label:'第二輪 KOL 費用',value:0}
+  {id:'kol_phase2',label:'第二輪 KOL 費用',value:0},  {id:'talent_sys',label:'適才系統費',value:0},{id:'edm_bot',label:'電子報＋客服機器人',value:0},{id:'fb_tax',label:'FB 扣繳稅額',value:0},
 ];
 const DISCOUNT_MAP=[
   {key:'舊生0元',match:r=>r.discountName&&r.discountName.includes('舊生兌換碼')},
@@ -1054,7 +1054,7 @@ function renderDash(){
         <div>
           <p style="font-size:12px;font-weight:500;color:var(--t2);margin-bottom:4px">成本概覽</p>
           <div class="cmg">
-            <div class="metric"><div class="metric-label">${currentPhase===1?'第一輪KOL':currentPhase===2?'第二輪KOL':'固定成本'}</div><div class="metric-value" id="mFC">$${(fc/10000).toFixed(1)}萬</div><div class="metric-sub">${currentPhase===1?'第一輪KOL費用':currentPhase===2?'第二輪KOL費用':'製課+兩輪KOL'}</div></div>
+            <div class="metric"><div class="metric-label">${currentPhase===1?'第一輪KOL':currentPhase===2?'第二輪KOL':'固定成本'}</div><div class="metric-value" id="mFC">$${(fc/10000).toFixed(1)}萬</div><div class="metric-sub">${currentPhase===1?'第一輪KOL費用':currentPhase===2?'第二輪KOL費用':'製課+兩輪KOL+其他固定'}</div></div>
             <div class="metric"><div class="metric-label">廣告成本</div><div class="metric-value" id="mAC">$${(ac/10000).toFixed(1)}萬</div><div class="metric-sub">${currentPhase===1?'6/9–7/26投放':currentPhase===2?'7/27–9/28投放':'各日投放加總'}</div></div>
             <div class="metric"><div class="metric-label">總成本</div><div class="metric-value" id="mTC">$${(tc/10000).toFixed(1)}萬</div><div class="metric-sub">${currentPhase==='all'?'固定 + 廣告 + 金流':'KOL + 廣告 + 金流'}</div></div>
             <div class="metric ${gp>=0?'profit':'loss'}"><div class="metric-label">${currentPhase==='all'?'累積毛利':'行銷損益'}</div><div class="metric-value" id="mP">${gp>=0?'+':'-'}$${(Math.abs(gp)/10000).toFixed(1)}萬</div><div class="metric-sub" id="mR">${roi!==null?'ROI '+roi.toFixed(0)+'%':'—'}</div></div>

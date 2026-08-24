@@ -195,8 +195,8 @@ const PHASE2_START=new Date('2026-07-27T00:00:00+08:00'),PHASE2_END=new Date('20
 let currentPhase=1;
 const fixedCostItems=[
   {id:'prep',label:'製課與前置調研',value:454776,ph:0},
-  {id:'kol',label:'第一輪 KOL 費用',value:2000000,ph:1},
-  {id:'kol_phase2',label:'第二輪 KOL 費用',value:0,ph:2},  {id:'talent_sys_p1',label:'適才系統費',value:0,ph:1,grp:'talent_sys'},{id:'talent_sys_p2',label:'適才系統費',value:0,ph:2,grp:'talent_sys'},{id:'edm_bot_p1',label:'電子報＋客服機器人',value:0,ph:1,grp:'edm_bot'},{id:'edm_bot_p2',label:'電子報＋客服機器人',value:0,ph:2,grp:'edm_bot'},{id:'fb_tax_p1',label:'FB 扣繳稅額',value:0,ph:1,grp:'fb_tax'},{id:'fb_tax_p2',label:'FB 扣繳稅額',value:0,ph:2,grp:'fb_tax'},
+  {id:'kol',label:'第一輪 KOL 費用',value:2000000,ph:1,cat:'ad'},
+  {id:'kol_phase2',label:'第二輪 KOL 費用',value:0,ph:2,cat:'ad'},  {id:'talent_sys_p1',label:'適才系統費',value:0,ph:1,grp:'talent_sys'},{id:'talent_sys_p2',label:'適才系統費',value:0,ph:2,grp:'talent_sys'},{id:'edm_bot_p1',label:'電子報＋客服機器人',value:0,ph:1,grp:'edm_bot'},{id:'edm_bot_p2',label:'電子報＋客服機器人',value:0,ph:2,grp:'edm_bot'},{id:'fb_tax_p1',label:'FB 扣繳稅額',value:0,ph:1,grp:'fb_tax',cat:'ad'},{id:'fb_tax_p2',label:'FB 扣繳稅額',value:0,ph:2,grp:'fb_tax',cat:'ad'},
 ];
 const DISCOUNT_MAP=[
   {key:'舊生0元',match:r=>r.discountName&&r.discountName.includes('舊生兌換碼')},
@@ -888,23 +888,33 @@ function getByDate(){
   }
   return d;
 }
-function fcRows(){if(currentPhase!=='all')return fixedCostItems.filter(i=>i.ph===currentPhase);const G={talent_sys:'適才系統費',edm_bot:'電子報＋客服機器人',fb_tax:'FB 扣繳稅額'};return fixedCostItems.filter(i=>!i.grp).concat(Object.keys(G).map(g=>({id:'sum_'+g,label:G[g],ro:true,value:fixedCostItems.filter(i=>i.grp===g).reduce((s,i)=>s+i.value,0)})));}function getTotalFixedCost(){
-  if(currentPhase===1){return fixedCostItems.filter(i=>i.ph===1).reduce((s,i)=>s+i.value,0);}
-  if(currentPhase===2){return fixedCostItems.filter(i=>i.ph===2).reduce((s,i)=>s+i.value,0);}
-  return fixedCostItems.reduce((s,i)=>s+i.value,0);
+// 成本分類：KOL 費用、FB 扣繳稅額、前置廣告、各日廣告投放 → 廣告成本；製課與前置調研、適才系統費、電子報＋客服機器人、金流 → 固定成本
+function isAdItem(i){return !!i&&i.cat==='ad';}
+function fcRows(cat){
+  const pick=i=>cat==='ad'?isAdItem(i):!isAdItem(i);
+  if(currentPhase!=='all')return fixedCostItems.filter(i=>i.ph===currentPhase&&pick(i));
+  const G={talent_sys:'適才系統費',edm_bot:'電子報＋客服機器人',fb_tax:'FB 扣繳稅額'};
+  const singles=fixedCostItems.filter(i=>!i.grp&&pick(i));
+  const groups=Object.keys(G).filter(g=>pick(fixedCostItems.find(i=>i.grp===g))).map(g=>({id:'sum_'+g,label:G[g],ro:true,value:fixedCostItems.filter(i=>i.grp===g).reduce((s,i)=>s+i.value,0)}));
+  return singles.concat(groups);
 }
+function fcInPhase(pred){return fixedCostItems.filter(i=>pred(i)&&(currentPhase==='all'||i.ph===currentPhase));}
+function getFixedItemCost(){return fcInPhase(i=>!isAdItem(i)).reduce((s,i)=>s+i.value,0);}
+function getAdItemCost(){return fcInPhase(i=>isAdItem(i)).reduce((s,i)=>s+i.value,0);}
 function getPaymentCost(){
   // 金流成本 = 累計營收 × 3.5%（自動計算，不需手動輸入）
   const totalRev=Object.values(getByDate()).reduce((s,d)=>s+d.rev,0);
   return Math.round(totalRev*0.035);
 }
-function getTotalAdCost(){
+function getDailyAdCost(){
   if(currentPhase===1){return Object.entries(adCosts).filter(([k])=>k!=='pretest'&&k>='2026-06-09'&&k<='2026-07-26').reduce((s,[,v])=>s+v,0);}
   if(currentPhase===2){return Object.entries(adCosts).filter(([k])=>k!=='pretest'&&k>='2026-07-27'&&k<='2026-09-28').reduce((s,[,v])=>s+v,0);}
-  return Object.values(adCosts).reduce((s,v)=>s+v,0);
+  return Object.entries(adCosts).filter(([k])=>k!=='pretest').reduce((s,[,v])=>s+v,0);
 }
 function getPretestAd(){return adCosts['pretest']||0;}
-function getTotalCost(){return getTotalFixedCost()+getTotalAdCost()+getPaymentCost();}
+function getTotalAdCost(){return getDailyAdCost()+getAdItemCost()+(currentPhase==='all'?getPretestAd():0);}
+function getTotalFixedCost(){return getFixedItemCost()+getPaymentCost();}
+function getTotalCost(){return getTotalFixedCost()+getTotalAdCost();}
 
 function buildSummary(sd,bd,tr,opts){
   if(!sd.length)return'';
@@ -930,7 +940,7 @@ function buildSummary(sd,bd,tr,opts){
   const ps=cp>=110?`<span class="hi">大幅超前（${cp.toFixed(0)}%）</span>`:cp>=100?`<span class="hi">符合進度（${cp.toFixed(0)}%）</span>`:cp>=85?`<span class="mid">略微落後（${cp.toFixed(0)}%）</span>`:`<span class="lo">明顯落後（${cp.toFixed(0)}%）</span>`;
   const prs=gp>=0?`<span class="hi">+$${(gp/10000).toFixed(1)}萬</span>`:`<span class="lo">-$${(Math.abs(gp)/10000).toFixed(1)}萬（尚未回本）</span>`;
   const rs=roi!==null?(roi>=0?`<span class="hi">ROI ${roi.toFixed(0)}%</span>`:`<span class="lo">ROI ${roi.toFixed(0)}%</span>`):'尚無成本資料';
-  return`<div class="sum-body">📅 <strong>${ld} 日報</strong><br>當日營收 <strong>$${(today.rev/10000).toFixed(1)}萬</strong>（${today.cnt} 筆），${ds}，購買高峰 <strong>${peak}:00–${peak+1}:00</strong>。${top?` 最活躍渠道 <strong>${top[0]}</strong>（${top[1]} 筆）。`:''}<br><br>📊 <strong>累積進度</strong> ${ps}，累積 $${(trForGoal/10000).toFixed(1)}萬${currentPhase===2?' （兩輪合計）':''}。${dl>0?` 剩餘 ${dl} 天每日需達 <strong class="${dn>DAILY_TARGET*1.3?'lo':dn>DAILY_TARGET?'mid':'hi'}">$${(dn/10000).toFixed(1)}萬</strong>。`:'活動已結束。'}<br><br>💰 <strong>損益</strong> 行銷損益 ${prs}，${rs}（KOL $${(getTotalFixedCost()/10000).toFixed(1)}萬 + 廣告 $${(ac/10000).toFixed(1)}萬 + 金流 $${(getPaymentCost()/10000).toFixed(1)}萬）。${ac===0?' <span class="mid">⚠ 尚未填入廣告成本，損益僅供參考。</span>':''}</div>`;
+  return`<div class="sum-body">📅 <strong>${ld} 日報</strong><br>當日營收 <strong>$${(today.rev/10000).toFixed(1)}萬</strong>（${today.cnt} 筆），${ds}，購買高峰 <strong>${peak}:00–${peak+1}:00</strong>。${top?` 最活躍渠道 <strong>${top[0]}</strong>（${top[1]} 筆）。`:''}<br><br>📊 <strong>累積進度</strong> ${ps}，累積 $${(trForGoal/10000).toFixed(1)}萬${currentPhase===2?' （兩輪合計）':''}。${dl>0?` 剩餘 ${dl} 天每日需達 <strong class="${dn>DAILY_TARGET*1.3?'lo':dn>DAILY_TARGET?'mid':'hi'}">$${(dn/10000).toFixed(1)}萬</strong>。`:'活動已結束。'}<br><br>💰 <strong>損益</strong> 行銷損益 ${prs}，${rs}（廣告 ${(ac/10000).toFixed(1)}萬 + 固定 ${(getTotalFixedCost()/10000).toFixed(1)}萬，其中金流 ${(getPaymentCost()/10000).toFixed(1)}萬）。${ac===0?' <span class="mid">⚠ 尚未填入廣告成本，損益僅供參考。</span>':''}</div>`;
 }
 
 function getDiscountData(day){
@@ -976,6 +986,7 @@ function updateAllCostDisplays(){
   set('mP',(gp>=0?'+':'-')+'$'+(Math.abs(gp)/10000).toFixed(1)+'萬');set('mR',roi!==null?'ROI '+roi.toFixed(0)+'%':'—');
   const pe=document.getElementById('mP');if(pe)pe.closest('.metric').className='metric '+(gp>=0?'profit':'loss');
   const ft=document.getElementById('fct');if(ft)ft.textContent='$'+(fc/10000).toFixed(1)+'萬';
+  set('act','$'+(ac/10000).toFixed(1)+'萬');set('dailyAdDisplay','$'+(getDailyAdCost()/10000).toFixed(1)+'萬');
   const pc_el=document.getElementById('paymentCostDisplay');if(pc_el)pc_el.textContent='$'+(pc/10000).toFixed(1)+'萬';
   updateSummary();
 }
@@ -1055,16 +1066,21 @@ function renderDash(){
       <div style="font-size:11px;color:var(--t3);margin-top:4px">距目標還需 $${Math.max(0,(target_disp-tr_disp)/10000).toFixed(1)}萬 | 剩餘 ${dl} 天 | 每日需達 $${dl>0?((Math.max(0,target_disp-tr_disp)/dl)/10000).toFixed(1):'0'}萬</div>
     </div>
     <div class="cost-sec"><div class="sl" style="margin-bottom:2px">💸 專案成本控制</div>
-      <p style="font-size:12px;color:var(--t3);margin-bottom:6px">固定成本可直接修改；今日廣告花費填入後點「套用」，自動同步雲端。</p>
+      <p style="font-size:12px;color:var(--t3);margin-bottom:6px">成本項目皆可直接修改；KOL 費用、FB 扣繳稅額、前置廣告計入廣告成本，其餘項目與金流計入固定成本。今日廣告花費填入後點「套用」，自動同步雲端。</p>
       <div id="syncStatus" class="sync"><span class="dot"></span><span class="stxt">成本資料已同步雲端</span></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-top:10px">
         <div>
-          <p style="font-size:12px;font-weight:500;color:var(--t2);margin-bottom:4px">${currentPhase===1?'第一輪行銷成本':currentPhase===2?'第二輪行銷成本':'固定成本明細'}</p>
+          <p style="font-size:12px;font-weight:500;color:var(--t2);margin-bottom:4px">${currentPhase===1?'第一輪成本明細':currentPhase===2?'第二輪成本明細':'成本明細'}</p>
           <table class="fct">
-            ${fcRows().map(i=>`<tr><td class="lb">${i.label}</td><td style="text-align:right;padding:3px 6px">${i.ro?`<span style="font-size:12px;color:var(--t3)">$${i.value.toLocaleString()}<span style="font-size:10px;margin-left:4px">（兩輪合計）</span></span>`:`<input class="ni fi" type="number" min="0" step="10000" value="${i.value}" onchange="updateFixedCostItem('${i.id}',this)">`}</td></tr>`).join('')}
+            <tr><td class="lb" style="font-weight:500;color:var(--t2)">廣告成本</td><td></td></tr>
+            ${fcRows('ad').map(i=>`<tr><td class="lb">${i.label}</td><td style="text-align:right;padding:3px 6px">${i.ro?`<span style="font-size:12px;color:var(--t3)">$${i.value.toLocaleString()}<span style="font-size:10px;margin-left:4px">（兩輪合計）</span></span>`:`<input class="ni fi" type="number" min="0" step="10000" value="${i.value}" onchange="updateFixedCostItem('${i.id}',this)">`}</td></tr>`).join('')}
             ${currentPhase==='all'?`<tr><td class="lb">前置廣告投放</td><td style="text-align:right;padding:3px 6px"><input class="ni fi" id="pretestAdOverviewInput" type="number" min="0" step="1000" value="${adCosts['pretest']||''}" onchange="updatePretestAdFromFixed(this)"></td></tr>`:''}
+            <tr><td class="lb">各日廣告投放</td><td style="text-align:right;font-size:12px;color:var(--t3)" id="dailyAdDisplay">$${(getDailyAdCost()/10000).toFixed(1)}萬</td></tr>
+            <tr><td class="lb" style="font-weight:500">廣告小計</td><td style="text-align:right;font-weight:500;font-size:12px" id="act">$${(ac/10000).toFixed(1)}萬</td></tr>
+            <tr><td class="lb" style="font-weight:500;color:var(--t2);padding-top:10px">固定成本</td><td></td></tr>
+            ${fcRows('fixed').map(i=>`<tr><td class="lb">${i.label}</td><td style="text-align:right;padding:3px 6px">${i.ro?`<span style="font-size:12px;color:var(--t3)">$${i.value.toLocaleString()}<span style="font-size:10px;margin-left:4px">（兩輪合計）</span></span>`:`<input class="ni fi" type="number" min="0" step="10000" value="${i.value}" onchange="updateFixedCostItem('${i.id}',this)">`}</td></tr>`).join('')}
             <tr><td class="lb">金流成本（3.5%）</td><td style="text-align:right;font-size:12px;color:var(--t3)" id="paymentCostDisplay">$${(getPaymentCost()/10000).toFixed(1)}萬</td></tr>
-            <tr><td class="lb" style="font-weight:500">小計</td><td style="text-align:right;font-weight:500;font-size:12px" id="fct">$${(fc/10000).toFixed(1)}萬</td></tr>
+            <tr><td class="lb" style="font-weight:500">固定小計</td><td style="text-align:right;font-weight:500;font-size:12px" id="fct">$${(fc/10000).toFixed(1)}萬</td></tr>
           </table>
           <div class="qa-box">
             <label>今日廣告花費</label>
@@ -1076,9 +1092,9 @@ function renderDash(){
         <div>
           <p style="font-size:12px;font-weight:500;color:var(--t2);margin-bottom:4px">成本概覽</p>
           <div class="cmg">
-            <div class="metric"><div class="metric-label">${currentPhase===1?'第一輪固定成本':currentPhase===2?'第二輪固定成本':'固定成本'}</div><div class="metric-value" id="mFC">$${(fc/10000).toFixed(1)}萬</div><div class="metric-sub">${currentPhase===1?'KOL＋其他固定成本':currentPhase===2?'KOL＋其他固定成本':'製課+兩輪KOL+其他固定'}</div></div>
-            <div class="metric"><div class="metric-label">廣告成本</div><div class="metric-value" id="mAC">$${(ac/10000).toFixed(1)}萬</div><div class="metric-sub">${currentPhase===1?'6/9–7/26投放':currentPhase===2?'7/27–9/28投放':'各日投放加總'}</div></div>
-            <div class="metric"><div class="metric-label">總成本</div><div class="metric-value" id="mTC">$${(tc/10000).toFixed(1)}萬</div><div class="metric-sub">${currentPhase==='all'?'固定 + 廣告 + 金流':'KOL + 廣告 + 金流'}</div></div>
+            <div class="metric"><div class="metric-label">${currentPhase===1?'第一輪固定成本':currentPhase===2?'第二輪固定成本':'固定成本'}</div><div class="metric-value" id="mFC">$${(fc/10000).toFixed(1)}萬</div><div class="metric-sub">${currentPhase==='all'?'製課＋適才系統＋電子報＋金流':'適才系統＋電子報＋金流'}</div></div>
+            <div class="metric"><div class="metric-label">廣告成本</div><div class="metric-value" id="mAC">$${(ac/10000).toFixed(1)}萬</div><div class="metric-sub">${currentPhase===1?'KOL＋FB稅＋6/9–7/26投放':currentPhase===2?'KOL＋FB稅＋7/27–9/28投放':'KOL＋FB稅＋前置＋各日投放'}</div></div>
+            <div class="metric"><div class="metric-label">總成本</div><div class="metric-value" id="mTC">$${(tc/10000).toFixed(1)}萬</div><div class="metric-sub">固定 + 廣告</div></div>
             <div class="metric ${gp>=0?'profit':'loss'}"><div class="metric-label">${currentPhase==='all'?'累積毛利':'行銷損益'}</div><div class="metric-value" id="mP">${gp>=0?'+':'-'}$${(Math.abs(gp)/10000).toFixed(1)}萬</div><div class="metric-sub" id="mR">${roi!==null?'ROI '+roi.toFixed(0)+'%':'—'}</div></div>
           </div>
         </div>

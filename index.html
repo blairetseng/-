@@ -1037,9 +1037,9 @@ function renderDash(){
   document.getElementById('dashContent').innerHTML=`
     <div class="metric-grid">
       ${currentPhase===2?`
-      <div class="metric"><div class="metric-label">兩輪累積營收</div><div class="metric-value">$${(tr_disp/10000).toFixed(1)}萬</div><div class="metric-sub">目標 $${(target_disp/10000).toFixed(0)}萬</div></div>
-      <div class="metric"><div class="metric-label">兩輪總達成率</div><div class="metric-value">${pct_disp}%</div><div class="metric-sub">距目標 $${(Math.max(0,target_disp-tr_disp)/10000).toFixed(1)}萬</div></div>
-      <div class="metric"><div class="metric-label">第二輪進度</div><div class="metric-value ${parseFloat(cpt)>=100?'ok':'warn'}">${cpt}%</div><div class="metric-sub">第二輪目標 $${(PHASE_TARGET/10000).toFixed(0)}萬</div></div>
+      <div class="metric"><div class="metric-label">第二輪累積營收</div><div class="metric-value">$${(tr/10000).toFixed(1)}萬</div><div class="metric-sub">第二輪 7/27 起</div></div>
+      <div class="metric"><div class="metric-label">第二輪達成率</div><div class="metric-value">${(tr/PHASE_TARGET*100).toFixed(1)}%</div><div class="metric-sub">第二輪目標 $${(PHASE_TARGET/10000).toFixed(0)}萬</div></div>
+      <div class="metric"><div class="metric-label">距第二輪目標</div><div class="metric-value ${tr>=PHASE_TARGET?'ok':'warn'}">$${(Math.max(0,PHASE_TARGET-tr)/10000).toFixed(1)}萬</div><div class="metric-sub">剩 ${dl} 天，每日需 $${(dl>0?(Math.max(0,PHASE_TARGET-tr)/dl/10000):0).toFixed(1)}萬</div></div>
       <div class="metric"><div class="metric-label">第二輪訂單數</div><div class="metric-value">${to.toLocaleString()}</div><div class="metric-sub">${sd.length} 天資料（7/27起）</div></div>
       `:`
       <div class="metric"><div class="metric-label">累計營收</div><div class="metric-value">$${(tr/10000).toFixed(1)}萬</div><div class="metric-sub">目標 $${(PHASE_TARGET/10000).toFixed(0)}萬</div></div>

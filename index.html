@@ -1061,7 +1061,7 @@ function renderDash(){
       `:`
       <div class="metric"><div class="metric-label">累計營收</div><div class="metric-value">$${(tr/10000).toFixed(1)}萬</div><div class="metric-sub">目標 $${(PHASE_TARGET/10000).toFixed(0)}萬</div></div>
       <div class="metric"><div class="metric-label">${pp.label}目標達成率</div><div class="metric-value">${pct_disp}%</div><div class="metric-sub">目標 $${(PHASE_TARGET/10000).toFixed(0)}萬</div></div>
-      <div class="metric"><div class="metric-label">當期達成率</div><div class="metric-value ${parseFloat(cpt)>=100?'ok':'warn'}">${cpt}%</div><div class="metric-sub">應走進度 $${(ct/10000).toFixed(1)}萬</div></div>
+      ${currentPhase==='all'?'':`<div class="metric"><div class="metric-label">當期達成率</div><div class="metric-value ${parseFloat(cpt)>=100?'ok':'warn'}">${cpt}%</div><div class="metric-sub">應走進度 $${(ct/10000).toFixed(1)}萬</div></div>`}
       <div class="metric"><div class="metric-label">總訂單數</div><div class="metric-value">${to.toLocaleString()}</div><div class="metric-sub">${sd.length} 天資料</div></div>
       `}
     </div>

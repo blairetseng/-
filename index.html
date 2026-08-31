@@ -683,7 +683,7 @@ function renderKolAnalysis(){
       const variants={};
       let uses=0, rev=0;
       getPhaseOrders(currentPhase).forEach(o=>{
-        if(o.discountKey!==code)return;
+        if(!o.discountKey||String(o.discountKey).toUpperCase()!==String(code).toUpperCase())return; // 折扣碼比對不分大小寫
         uses++;
         rev+=o.total;
         const dn=o.discountName||'（空）';
